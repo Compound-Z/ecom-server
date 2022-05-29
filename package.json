@@ -4,8 +4,8 @@
   "description": "nodejs server for ecom project",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "start": "node app.js"
   },
   "author": "hoangpv18",
   "license": "ISC",

@@ -46,7 +46,7 @@ const ProductSchema = new mongoose.Schema(
 			type: Boolean,
 			default: false,
 		},
-		saleOfPercentage: {
+		saleOffPercentage: {
 			type: Number,
 			default: 0
 		},

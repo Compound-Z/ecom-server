@@ -4,7 +4,7 @@ const CustomError = require('../errors');
 
 
 const getAllProducts = async (req, res) => {
-	const products = await Product.find({})
+	const products = await Product.find({}).select('-user -createdAt -updatedAt -__v -id')
 	res.status(StatusCodes.OK).json(products)
 }
 

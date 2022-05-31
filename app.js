@@ -15,6 +15,7 @@ const notFound = require('./middleware/not-found')
 const errorHandlerMiddleware = require('./middleware/error-handler')
 
 //routes
+const authRouter = require('./routers/authRoutes');
 const routerProduct = require('./routers/productRoutes')
 
 
@@ -23,9 +24,11 @@ app.use(morgan('tiny'))
 app.use(express.json())
 
 
+
 app.get('/', (req, res) => {
 	res.send('OKE')
 })
+app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/products', routerProduct)
 
 app.use(notFound)

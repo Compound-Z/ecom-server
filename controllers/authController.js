@@ -97,8 +97,8 @@ const login = async (req, res) => {
 			throw new CustomError.UnauthenticatedError('Invalid Credentials');
 		}
 		refreshToken = existingToken.refreshToken;
-		const accessTokenJWT = createJWT({ payload: { tokenUser }, type: 'access' })
-		const refreshTokenJWT = createJWT({ payload: { refreshToken }, type: 'refresh' })
+		const accessTokenJWT = createJWT({ payload: { user: tokenUser }, type: 'access' })
+		const refreshTokenJWT = createJWT({ payload: { user: tokenUser, refreshToken }, type: 'refresh' })
 		res.status(StatusCodes.OK).json({ user: tokenUser, accessToken: accessTokenJWT, refreshToken: refreshTokenJWT });
 		return;
 	}
@@ -110,8 +110,8 @@ const login = async (req, res) => {
 
 	await Token.create(userRefreshToken);
 
-	const accessTokenJWT = createJWT({ payload: { tokenUser }, type: 'access' })
-	const refreshTokenJWT = createJWT({ payload: { refreshToken }, type: 'refresh' })
+	const accessTokenJWT = createJWT({ payload: { user: tokenUser }, type: 'access' })
+	const refreshTokenJWT = createJWT({ payload: { user: tokenUser, refreshToken }, type: 'refresh' })
 	res.status(StatusCodes.OK).json({ user: tokenUser, accessToken: accessTokenJWT, refreshToken: refreshTokenJWT });
 };
 const logout = async (req, res) => {
@@ -161,6 +161,35 @@ const resetPassword = async (req, res) => {
 	res.status(StatusCodes.OK).json({ message: "Reset password successfully" });
 };
 
+const refreshToken = async (req, res) => {
+	const authHeader = req.headers.authorization;
+	if (!authHeader || !authHeader.startsWith('Bearer')) {
+		throw new UnauthenticatedError('Header or token is missing')
+	}
+	const refreshToken = authHeader.split(' ')[1]
+	try {
+		const payload = isTokenValid(refreshToken);
+		console.log('payload:', payload)
+		const existingToken = await Token.findOne({
+			user: payload.user.userId,
+			refreshToken: payload.refreshToken,
+		});
+		console.log('existingToken: ', existingToken)
+
+		if (!existingToken || !existingToken?.isValid) {
+			throw new CustomError.UnauthenticatedError('Authentication Invalid');
+		}
+
+		const userToken = payload.user
+		const accessTokenJWT = createJWT({ payload: { userToken }, type: 'access' })
+
+		req.user = payload.user;
+		res.status(StatusCodes.OK).json({ message: "Refresh token successfully", accessToken: accessTokenJWT })
+	} catch (error) {
+		throw new CustomError.UnauthenticatedError('Invalid refresh token')
+	}
+
+}
 module.exports = {
 	register,
 	login,
@@ -168,4 +197,5 @@ module.exports = {
 	verifyOTP,
 	forgotPassword,
 	resetPassword,
+	refreshToken,
 };

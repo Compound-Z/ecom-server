@@ -10,12 +10,12 @@ const {
 // const { getAllReviewsOfAProduct } = require('../controllers/reviewCotroller')
 const express = require('express')
 const router = express.Router()
-// const authentication = require('../middleware/authentication')
+const authentication = require('../middleware/authentication')
 
 
 router.route('/')
 	.get(getAllProducts)
-	.post(/*authentication.authenticateUser, authentication.authorizeUserPermission('admin'),*/ createProduct)
+	.post(authentication.authenticateUser,/* authentication.authorizeUserPermission('admin'),*/ createProduct)
 router.route('/uploadImage')
 	.post(/*authentication.authenticateUser, authentication.authorizeUserPermission('admin'), */uploadImage)
 router.route('/:id')

@@ -3,6 +3,8 @@ const Token = require('../models/Token');
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
 const {
+	createJWT,
+	isTokenValid,
 	createTokenUser,
 	sendVerificationOTP,
 	checkVerificationOTP,
@@ -11,10 +13,10 @@ const {
 const crypto = require('crypto');
 
 const register = async (req, res) => {
-	const { phone, name, password } = req.body;
+	const { phoneNumber, name, password } = req.body;
 
-	const phoneAlreadyExists = await User.findOne({ phone });
-	if (phoneAlreadyExists) {
+	const phoneNumberAlreadyExists = await User.findOne({ phoneNumber });
+	if (phoneNumberAlreadyExists) {
 		throw new CustomError.BadRequestError('Phone number already exists');
 	}
 
@@ -23,34 +25,34 @@ const register = async (req, res) => {
 	const role = isFirstAccount ? 'admin' : 'customer';
 
 
-	// const user = await User.create({
-	// 	name,
-	// 	phone,
-	// 	password,
-	// 	role,
-	// });
+	const user = await User.create({
+		name,
+		phoneNumber,
+		password,
+		role
+	});
 
-	const verification = await sendVerificationOTP(/*user.*/phone);
-	console.log('verification: ', verification)
+	const verification = await sendVerificationOTP(user.phoneNumber);
+
 	res.status(StatusCodes.CREATED).json({
-		msg: 'Send OTP success',
+		message: 'Send OTP successfully',
 	});
 };
 
 const verifyOTP = async (req, res) => {
-	const { otp, phone } = req.body;
-	const user = await User.findOne({ phone });
+	const { otp, phoneNumber } = req.body;
+	const user = await User.findOne({ phoneNumber });
 
 	//todo: this should be uncommented later
-	// if (!user) {
-	// 	throw new CustomError.UnauthenticatedError('Verification Failed');
-	// }
+	if (!user) {
+		throw new CustomError.UnauthenticatedError('User does not exist');
+	}
 
-	const verificationCheck = await checkVerificationOTP(otp, phone);
+	const verificationCheck = await checkVerificationOTP(otp, phoneNumber);
 	console.log(verificationCheck)
 	if (!(verificationCheck.status === 'approved')) {
 		//error!
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ msg: verificationCheck.status })
+		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: `Verify OTP failed.` })
 		return
 	}
 
@@ -58,18 +60,18 @@ const verifyOTP = async (req, res) => {
 	(user.isVerified = true), (user.verified = Date.now());
 
 	//todo: uncomment
-	// await user.save();
+	await user.save();
 
-	res.status(StatusCodes.OK).json({ msg: 'Phone verification status: ' + verificationCheck.status });
+	res.status(StatusCodes.OK).json({ message: `Verify phone number successfully` });
 };
 
 const login = async (req, res) => {
-	const { email, password } = req.body;
+	const { phoneNumber, password } = req.body;
 
-	if (!email || !password) {
-		throw new CustomError.BadRequestError('Please provide email and password');
+	if (!phoneNumber || !password) {
+		throw new CustomError.BadRequestError('Please provide phone number and password');
 	}
-	const user = await User.findOne({ email });
+	const user = await User.findOne({ phoneNumber });
 
 	if (!user) {
 		throw new CustomError.UnauthenticatedError('Invalid Credentials');
@@ -80,7 +82,7 @@ const login = async (req, res) => {
 		throw new CustomError.UnauthenticatedError('Invalid Credentials');
 	}
 	if (!user.isVerified) {
-		throw new CustomError.UnauthenticatedError('Please verify your email');
+		throw new CustomError.UnauthenticatedError('Please verify your phoneNumber');
 	}
 	const tokenUser = createTokenUser(user);
 
@@ -95,89 +97,68 @@ const login = async (req, res) => {
 			throw new CustomError.UnauthenticatedError('Invalid Credentials');
 		}
 		refreshToken = existingToken.refreshToken;
-		attachCookiesToResponse({ res, user: tokenUser, refreshToken });
-		res.status(StatusCodes.OK).json({ user: tokenUser });
+		const accessTokenJWT = createJWT({ payload: { tokenUser }, type: 'access' })
+		const refreshTokenJWT = createJWT({ payload: { refreshToken }, type: 'refresh' })
+		res.status(StatusCodes.OK).json({ user: tokenUser, accessToken: accessTokenJWT, refreshToken: refreshTokenJWT });
 		return;
 	}
 
 	refreshToken = crypto.randomBytes(40).toString('hex');
 	const userAgent = req.headers['user-agent'];
 	const ip = req.ip;
-	const userToken = { refreshToken, ip, userAgent, user: user._id };
+	const userRefreshToken = { refreshToken, ip, userAgent, user: user._id };
 
-	await Token.create(userToken);
+	await Token.create(userRefreshToken);
 
-	attachCookiesToResponse({ res, user: tokenUser, refreshToken });
-
-	res.status(StatusCodes.OK).json({ user: tokenUser });
+	const accessTokenJWT = createJWT({ payload: { tokenUser }, type: 'access' })
+	const refreshTokenJWT = createJWT({ payload: { refreshToken }, type: 'refresh' })
+	res.status(StatusCodes.OK).json({ user: tokenUser, accessToken: accessTokenJWT, refreshToken: refreshTokenJWT });
 };
 const logout = async (req, res) => {
 	await Token.findOneAndDelete({ user: req.user.userId });
-
-	res.cookie('accessToken', 'logout', {
-		httpOnly: true,
-		expires: new Date(Date.now()),
-	});
-	res.cookie('refreshToken', 'logout', {
-		httpOnly: true,
-		expires: new Date(Date.now()),
-	});
-	res.status(StatusCodes.OK).json({ msg: 'user logged out!' });
+	res.status(StatusCodes.OK).json({ message: 'Logged out successfully' });
 };
 
 const forgotPassword = async (req, res) => {
-	const { email } = req.body;
-	if (!email) {
-		throw new CustomError.BadRequestError('Please provide valid email');
+	const { phoneNumber } = req.body;
+	if (!phoneNumber) {
+		throw new CustomError.BadRequestError('Please provide valid phone number');
 	}
 
-	const user = await User.findOne({ email });
+	const user = await User.findOne({ phoneNumber });
+	if (!user) {
+		throw new CustomError.NotFoundError('User doesn\'t exist, please check your phone number')
+	}
 
 	if (user) {
-		const passwordToken = crypto.randomBytes(70).toString('hex');
-		// send email
-		const origin = 'http://localhost:3000';
-		await sendResetPasswordEmail({
-			name: user.name,
-			email: user.email,
-			token: passwordToken,
-			origin,
-		});
-
-		const tenMinutes = 1000 * 60 * 10;
-		const passwordTokenExpirationDate = new Date(Date.now() + tenMinutes);
-
-		user.passwordToken = createHash(passwordToken);
-		user.passwordTokenExpirationDate = passwordTokenExpirationDate;
-		await user.save();
+		// send otp
+		await sendVerificationOTP(user.phoneNumber);
 	}
 
-	res
-		.status(StatusCodes.OK)
-		.json({ msg: 'Please check your email for reset password link' });
+	res.status(StatusCodes.OK).json({ message: 'Please check your phonephoneNumber for reset OTP' });
 };
 const resetPassword = async (req, res) => {
-	const { token, email, password } = req.body;
-	if (!token || !email || !password) {
+	const { otp, phoneNumber, password } = req.body;
+	if (!otp || !phoneNumber || !password) {
 		throw new CustomError.BadRequestError('Please provide all values');
 	}
-	const user = await User.findOne({ email });
-
+	const user = await User.findOne({ phoneNumber });
+	if (!user) {
+		throw new CustomError.NotFoundError('User doesn\'t exist, please check your phone number')
+	}
 	if (user) {
-		const currentDate = new Date();
 
-		if (
-			user.passwordToken === createHash(token) &&
-			user.passwordTokenExpirationDate > currentDate
-		) {
+		const verificationCheck = await checkVerificationOTP(otp, phoneNumber)
+
+		if (verificationCheck.status === 'approved') {
 			user.password = password;
-			user.passwordToken = null;
-			user.passwordTokenExpirationDate = null;
 			await user.save();
+		} else {
+			throw new CustomError.UnauthenticatedError('Can not verify OTP')
 		}
 	}
 
-	res.send('reset password');
+	res.status(StatusCodes.OK).json({ message: "Reset password successfully" });
 };
 
 module.exports = {

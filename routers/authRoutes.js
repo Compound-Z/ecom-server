@@ -13,7 +13,7 @@ const {
 	refreshToken,
 } = require('../controllers/authController');
 
-router.post('/register', register);
+router.post('/signup', register);
 router.post('/login', login);
 router.delete('/logout', authenticateUser, logout);
 router.post('/verify-otp', verifyOTP);

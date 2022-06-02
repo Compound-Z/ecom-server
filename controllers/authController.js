@@ -184,7 +184,7 @@ const refreshToken = async (req, res) => {
 		const accessTokenJWT = createJWT({ payload: { userToken }, type: 'access' })
 
 		req.user = payload.user;
-		res.status(StatusCodes.OK).json({ message: "Refresh token successfully", accessToken: accessTokenJWT })
+		res.status(StatusCodes.OK).json({ accessToken: accessTokenJWT })
 	} catch (error) {
 		throw new CustomError.UnauthenticatedError('Invalid refresh token')
 	}

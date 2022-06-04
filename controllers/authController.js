@@ -162,11 +162,12 @@ const resetPassword = async (req, res) => {
 };
 
 const refreshToken = async (req, res) => {
-	const authHeader = req.headers.authorization;
-	if (!authHeader || !authHeader.startsWith('Bearer')) {
-		throw new UnauthenticatedError('Header or token is missing')
+	const refreshToken = req.body.refreshToken;
+	console.log('body: ', req.body)
+
+	if (!refreshToken) {
+		throw new CustomError.UnauthenticatedError('refresh_token is missing')
 	}
-	const refreshToken = authHeader.split(' ')[1]
 	try {
 		const payload = isTokenValid(refreshToken);
 		console.log('payload:', payload)
@@ -177,7 +178,7 @@ const refreshToken = async (req, res) => {
 		console.log('existingToken: ', existingToken)
 
 		if (!existingToken || !existingToken?.isValid) {
-			throw new CustomError.UnauthenticatedError('Authentication Invalid');
+			throw new CustomError.UnauthenticatedError('Invalid refresh token');
 		}
 
 		const userToken = payload.user
@@ -186,9 +187,9 @@ const refreshToken = async (req, res) => {
 		req.user = payload.user;
 		res.status(StatusCodes.OK).json({ accessToken: accessTokenJWT })
 	} catch (error) {
+		console.log('error: ', error)
 		throw new CustomError.UnauthenticatedError('Invalid refresh token')
 	}
-
 }
 module.exports = {
 	register,

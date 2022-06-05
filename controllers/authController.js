@@ -15,8 +15,8 @@ const crypto = require('crypto');
 const register = async (req, res) => {
 	const { phoneNumber, name, password } = req.body;
 
-	const phoneNumberAlreadyExists = await User.findOne({ phoneNumber });
-	if (phoneNumberAlreadyExists) {
+	const existedUser = await User.findOne({ phoneNumber });
+	if (existedUser && existedUser.isVerified) {
 		throw new CustomError.BadRequestError('Phone number already exists');
 	}
 
@@ -25,14 +25,14 @@ const register = async (req, res) => {
 	const role = isFirstAccount ? 'admin' : 'customer';
 
 
-	const user = await User.create({
+	const user = existedUser ? existedUser : await User.create({
 		name,
 		phoneNumber,
 		password,
 		role
 	});
 
-	const verification = await sendVerificationOTP(user.phoneNumber);
+	// const verification = await sendVerificationOTP(user.phoneNumber);
 
 	res.status(StatusCodes.CREATED).json({
 		message: 'Send OTP successfully',
@@ -41,18 +41,23 @@ const register = async (req, res) => {
 
 const verifyOTP = async (req, res) => {
 	const { otp, phoneNumber } = req.body;
+	console.log('body', req.body)
 	const user = await User.findOne({ phoneNumber });
 
 	//todo: this should be uncommented later
 	if (!user) {
 		throw new CustomError.UnauthenticatedError('User does not exist');
 	}
-
-	const verificationCheck = await checkVerificationOTP(otp, phoneNumber);
+	const verificationCheck = null
+	try {
+		verificationCheck = await checkVerificationOTP(null, phoneNumber);
+	} catch (error) {
+		//todo: throw new custome error of verification
+	}
 	console.log(verificationCheck)
 	if (!(verificationCheck.status === 'approved')) {
 		//error!
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: `Verify OTP failed.` })
+		res.status(StatusCodes.OK).json({ message: `Verify OTP failed`, status: "pending" })
 		return
 	}
 
@@ -62,7 +67,7 @@ const verifyOTP = async (req, res) => {
 	//todo: uncomment
 	await user.save();
 
-	res.status(StatusCodes.OK).json({ message: `Verify phone number successfully` });
+	res.status(StatusCodes.OK).json({ message: `Verify OTP successfully`, status: "pending" });
 };
 
 const login = async (req, res) => {

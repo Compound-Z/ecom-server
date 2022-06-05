@@ -1,5 +1,6 @@
 const { StatusCodes } = require('http-status-codes');
 const errorHandlerMiddleware = (err, req, res, next) => {
+	console.log('original error:', err)
 	let customError = {
 		// set default
 		statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
@@ -20,6 +21,11 @@ const errorHandlerMiddleware = (err, req, res, next) => {
 	if (err.name === 'CastError') {
 		customError.msg = `No item found with id : ${err.value}`;
 		customError.statusCode = 404;
+	}
+	if (err.code && err.code === 20404) {
+		//still return 200 bcs FE will display this as a "Verify OTP failed". It's equivelent to wrong OTP
+		customError.msg = `expired`;
+		customError.statusCode = 200;
 	}
 
 	return res.status(customError.statusCode).json({ message: customError.msg });

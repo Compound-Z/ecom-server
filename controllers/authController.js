@@ -32,6 +32,7 @@ const register = async (req, res) => {
 		role
 	});
 
+	//todo: enable this to send otp
 	// const verification = await sendVerificationOTP(user.phoneNumber);
 
 	res.status(StatusCodes.CREATED).json({
@@ -44,17 +45,18 @@ const verifyOTP = async (req, res) => {
 	console.log('body', req.body)
 	const user = await User.findOne({ phoneNumber });
 
-	//todo: this should be uncommented later
 	if (!user) {
 		throw new CustomError.UnauthenticatedError('User does not exist');
 	}
+
 	const verificationCheck = null
 	try {
 		verificationCheck = await checkVerificationOTP(null, phoneNumber);
 	} catch (error) {
-		//todo: throw new custome error of verification
+		throw new CustomError.ThirdPartyServiceError('Verify OTP failed')
 	}
 	console.log(verificationCheck)
+
 	if (!(verificationCheck.status === 'approved')) {
 		//error!
 		res.status(StatusCodes.OK).json({ message: `Verify OTP failed`, status: "pending" })

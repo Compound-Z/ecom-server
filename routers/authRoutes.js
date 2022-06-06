@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { authenticateUser } = require('../middleware/authentication');
-
+const passwordValidator = require('../middleware/validator')
 const {
 	register,
 	login,
@@ -13,7 +13,7 @@ const {
 	refreshToken,
 } = require('../controllers/authController');
 
-router.post('/signup', register);
+router.post('/signup', passwordValidator, register);
 router.post('/login', login);
 router.delete('/logout', authenticateUser, logout);
 router.post('/verify-otp', verifyOTP);

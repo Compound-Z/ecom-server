@@ -2,6 +2,8 @@ const User = require('../models/User');
 const Token = require('../models/Token');
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
+const { body, validationResult } = require('express-validator');
+
 const {
 	createJWT,
 	isTokenValid,
@@ -13,6 +15,19 @@ const {
 const crypto = require('crypto');
 
 const register = async (req, res) => {
+	//for testing only.
+	//todo: comment out in production enviroment
+	// return res.status(StatusCodes.CREATED).json({
+	// 	message: 'Send OTP successfully',
+	// });
+
+	/**Validate body */
+	const errrorsValidate = validationResult(req)
+	if (!errrorsValidate.isEmpty()) {
+		//for now, there is only password validator, so i return this message, if there r more validator, need to return msgs base on the errors
+		throw new CustomError.BadRequestError("Please provide a stronger password: minimum eight characters, at least one uppercase letter, one lowercase letter and one number!")
+	}
+
 	const { phoneNumber, name, password } = req.body;
 
 	const existedUser = await User.findOne({ phoneNumber });
@@ -24,6 +39,12 @@ const register = async (req, res) => {
 	const isFirstAccount = (await User.countDocuments({})) === 0;
 	const role = isFirstAccount ? 'admin' : 'customer';
 
+	//if user existed but has not verified yet, update new name, password
+	if (existedUser && !existedUser.isVerified) {
+		existedUser.name = name
+		existedUser.password = password
+		await existedUser.save()
+	}
 
 	const user = existedUser ? existedUser : await User.create({
 		name,
@@ -47,6 +68,12 @@ const register = async (req, res) => {
 };
 
 const verifyOTP = async (req, res) => {
+	//for testing only.
+	//todo: comment out in production enviroment
+	//if check successfully
+	// return res.status(StatusCodes.OK).json({ message: `Verify OTP successfully`, status: "approved" });
+
+
 	const { otp, phoneNumber } = req.body;
 	console.log('body', req.body)
 	const user = await User.findOne({ phoneNumber });
@@ -126,7 +153,15 @@ const login = async (req, res) => {
 
 	const accessTokenJWT = createJWT({ payload: { user: tokenUser }, type: 'access' })
 	const refreshTokenJWT = createJWT({ payload: { user: tokenUser, refreshToken }, type: 'refresh' })
-	res.status(StatusCodes.OK).json({ user: tokenUser, accessToken: accessTokenJWT, refreshToken: refreshTokenJWT });
+	res.status(StatusCodes.OK).json(
+		{
+			user: tokenUser,
+			tokens: {
+				accessToken: accessTokenJWT,
+				refreshToken: refreshTokenJWT
+			}
+		}
+	);
 };
 const logout = async (req, res) => {
 	await Token.findOneAndDelete({ user: req.user.userId });

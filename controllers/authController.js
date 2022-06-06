@@ -33,7 +33,13 @@ const register = async (req, res) => {
 	});
 
 	//todo: enable this to send otp
-	// const verification = await sendVerificationOTP(user.phoneNumber);
+	let verification = null
+	try {
+		verification = await sendVerificationOTP(user.phoneNumber);
+	} catch (error) {
+		console.log('error sendVerificationOTP:', error)
+		throw new CustomError.ThirdPartyServiceError('Can not send OTP code')
+	}
 
 	res.status(StatusCodes.CREATED).json({
 		message: 'Send OTP successfully',
@@ -49,10 +55,11 @@ const verifyOTP = async (req, res) => {
 		throw new CustomError.UnauthenticatedError('User does not exist');
 	}
 
-	const verificationCheck = null
+	let verificationCheck = null
 	try {
-		verificationCheck = await checkVerificationOTP(null, phoneNumber);
+		verificationCheck = await checkVerificationOTP(otp, phoneNumber);
 	} catch (error) {
+		console.log('error checkVerificationOTP:', error)
 		throw new CustomError.ThirdPartyServiceError('Verify OTP failed')
 	}
 	console.log(verificationCheck)
@@ -69,7 +76,7 @@ const verifyOTP = async (req, res) => {
 	//todo: uncomment
 	await user.save();
 
-	res.status(StatusCodes.OK).json({ message: `Verify OTP successfully`, status: "pending" });
+	res.status(StatusCodes.OK).json({ message: `Verify OTP successfully`, status: "approved" });
 };
 
 const login = async (req, res) => {

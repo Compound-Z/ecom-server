@@ -56,7 +56,7 @@ const register = async (req, res) => {
 	//todo: enable this to send otp
 	let verification = null
 	try {
-		verification = await sendVerificationOTP(user.phoneNumber);
+		// verification = await sendVerificationOTP(user.phoneNumber);
 	} catch (error) {
 		console.log('error sendVerificationOTP:', error)
 		throw new CustomError.ThirdPartyServiceError('Can not send OTP code')
@@ -140,7 +140,15 @@ const login = async (req, res) => {
 		refreshToken = existingToken.refreshToken;
 		const accessTokenJWT = createJWT({ payload: { user: tokenUser }, type: 'access' })
 		const refreshTokenJWT = createJWT({ payload: { user: tokenUser, refreshToken }, type: 'refresh' })
-		res.status(StatusCodes.OK).json({ user: tokenUser, accessToken: accessTokenJWT, refreshToken: refreshTokenJWT });
+		res.status(StatusCodes.OK).json(
+			{
+				user: tokenUser,
+				tokens: {
+					accessToken: accessTokenJWT,
+					refreshToken: refreshTokenJWT
+				}
+			}
+		);
 		return;
 	}
 

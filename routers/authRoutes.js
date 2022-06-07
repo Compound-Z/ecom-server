@@ -17,7 +17,7 @@ router.post('/signup', passwordValidator, register);
 router.post('/login', login);
 router.delete('/logout', authenticateUser, logout);
 router.post('/verify-otp', verifyOTP);
-router.post('/reset-password', resetPassword);
+router.post('/reset-password', passwordValidator, resetPassword);
 router.post('/forgot-password', forgotPassword);
 router.post('/refresh-token', refreshToken)
 

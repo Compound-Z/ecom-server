@@ -3,7 +3,7 @@ const Token = require('../models/Token');
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
 const { body, validationResult } = require('express-validator');
-
+const errorMsgs = require('../errors/error_msgs')
 const {
 	createJWT,
 	isTokenValid,
@@ -24,6 +24,7 @@ const register = async (req, res) => {
 	/**Validate body */
 	const errrorsValidate = validationResult(req)
 	if (!errrorsValidate.isEmpty()) {
+		console.log(errrorsValidate)
 		//for now, there is only password validator, so i return this message, if there r more validator, need to return msgs base on the errors
 		throw new CustomError.BadRequestError("Please provide a stronger password: minimum eight characters, at least one uppercase letter, one lowercase letter and one number!")
 	}
@@ -32,7 +33,7 @@ const register = async (req, res) => {
 
 	const existedUser = await User.findOne({ phoneNumber });
 	if (existedUser && existedUser.isVerified) {
-		throw new CustomError.BadRequestError('Phone number already exists');
+		throw new CustomError.BadRequestError(errorMsgs.PHONE_NUMBER_ALREADY_EXIST);
 	}
 
 	// first registered user is an admin
@@ -56,10 +57,10 @@ const register = async (req, res) => {
 	//todo: enable this to send otp
 	let verification = null
 	try {
-		// verification = await sendVerificationOTP(user.phoneNumber);
+		verification = await sendVerificationOTP(user.phoneNumber);
 	} catch (error) {
 		console.log('error sendVerificationOTP:', error)
-		throw new CustomError.ThirdPartyServiceError('Can not send OTP code')
+		throw new CustomError.ThirdPartyServiceError(errorMsgs.CAN_NOT_SEND_OTP)
 	}
 
 	res.status(StatusCodes.CREATED).json({
@@ -71,7 +72,7 @@ const verifyOTP = async (req, res) => {
 	//for testing only.
 	//todo: comment out in production enviroment
 	//if check successfully
-	// return res.status(StatusCodes.OK).json({ message: `Verify OTP successfully`, status: "approved" });
+	// return res.status(StatusCodes.OK).json({ message: `Verify OTP successfully`, status: errorMsgs.APPROVED });
 
 
 	const { otp, phoneNumber } = req.body;
@@ -79,7 +80,7 @@ const verifyOTP = async (req, res) => {
 	const user = await User.findOne({ phoneNumber });
 
 	if (!user) {
-		throw new CustomError.UnauthenticatedError('User does not exist');
+		throw new CustomError.UnauthenticatedError(errorMsgs.USER_DOES_NOT_EXIST);
 	}
 
 	let verificationCheck = null
@@ -87,13 +88,13 @@ const verifyOTP = async (req, res) => {
 		verificationCheck = await checkVerificationOTP(otp, phoneNumber);
 	} catch (error) {
 		console.log('error checkVerificationOTP:', error)
-		throw new CustomError.ThirdPartyServiceError('Verify OTP failed')
+		throw new CustomError.ThirdPartyServiceError(errorMsgs.VERIFY_OTP_FAILED)
 	}
 	console.log(verificationCheck)
 
-	if (!(verificationCheck.status === 'approved')) {
+	if (!(verificationCheck.status === errorMsgs.APPROVED)) {
 		//error!
-		res.status(StatusCodes.OK).json({ message: `Verify OTP failed`, status: "pending" })
+		res.status(StatusCodes.OK).json({ message: errorMsgs.VERIFY_OTP_FAILED, status: errorMsgs.PENDING })
 		return
 	}
 
@@ -103,7 +104,7 @@ const verifyOTP = async (req, res) => {
 	//todo: uncomment
 	await user.save();
 
-	res.status(StatusCodes.OK).json({ message: `Verify OTP successfully`, status: "approved" });
+	res.status(StatusCodes.OK).json({ message: errorMsgs.VERIFY_OTP_SUCCESSFULLY, status: errorMsgs.APPROVED });
 };
 
 const login = async (req, res) => {
@@ -115,15 +116,15 @@ const login = async (req, res) => {
 	const user = await User.findOne({ phoneNumber });
 
 	if (!user) {
-		throw new CustomError.UnauthenticatedError('Invalid Credentials');
+		throw new CustomError.UnauthenticatedError(errorMsgs.INVALID_CREDENTIALS);
 	}
 	const isPasswordCorrect = await user.comparePassword(password);
 
 	if (!isPasswordCorrect) {
-		throw new CustomError.UnauthenticatedError('Invalid Credentials');
+		throw new CustomError.UnauthenticatedError(errorMsgs.INVALID_CREDENTIALS);
 	}
 	if (!user.isVerified) {
-		throw new CustomError.UnauthenticatedError('Please verify your phoneNumber');
+		throw new CustomError.UnauthenticatedError(errorMsgs.VERIFY_PHONE);
 	}
 	const tokenUser = createTokenUser(user);
 
@@ -135,11 +136,11 @@ const login = async (req, res) => {
 	if (existingToken) {
 		const { isValid } = existingToken;
 		if (!isValid) {
-			throw new CustomError.UnauthenticatedError('Invalid Credentials');
+			throw new CustomError.UnauthenticatedError(errorMsgs.INVALID_CREDENTIALS);
 		}
 		refreshToken = existingToken.refreshToken;
-		const accessTokenJWT = createJWT({ payload: { user: tokenUser }, type: 'access' })
-		const refreshTokenJWT = createJWT({ payload: { user: tokenUser, refreshToken }, type: 'refresh' })
+		const accessTokenJWT = createJWT({ payload: { user: tokenUser }, type: errorMsgs.TOKEN_TYPE_ACCESS })
+		const refreshTokenJWT = createJWT({ payload: { user: tokenUser, refreshToken }, type: errorMsgs.TOKEN_TYPE_REFRESH })
 		res.status(StatusCodes.OK).json(
 			{
 				user: tokenUser,
@@ -159,8 +160,8 @@ const login = async (req, res) => {
 
 	await Token.create(userRefreshToken);
 
-	const accessTokenJWT = createJWT({ payload: { user: tokenUser }, type: 'access' })
-	const refreshTokenJWT = createJWT({ payload: { user: tokenUser, refreshToken }, type: 'refresh' })
+	const accessTokenJWT = createJWT({ payload: { user: tokenUser }, type: errorMsgs.TOKEN_TYPE_ACCESS })
+	const refreshTokenJWT = createJWT({ payload: { user: tokenUser, refreshToken }, type: errorMsgs.TOKEN_TYPE_REFRESH })
 	res.status(StatusCodes.OK).json(
 		{
 			user: tokenUser,
@@ -177,6 +178,7 @@ const logout = async (req, res) => {
 };
 
 const forgotPassword = async (req, res) => {
+	console.log('body:', req.body)
 	const { phoneNumber } = req.body;
 	if (!phoneNumber) {
 		throw new CustomError.BadRequestError('Please provide valid phone number');
@@ -184,38 +186,49 @@ const forgotPassword = async (req, res) => {
 
 	const user = await User.findOne({ phoneNumber });
 	if (!user) {
-		throw new CustomError.NotFoundError('User doesn\'t exist, please check your phone number')
+		throw new CustomError.NotFoundError(errorMsgs.USER_DOES_NOT_EXIST)
 	}
 
-	if (user) {
-		// send otp
+	try {
 		await sendVerificationOTP(user.phoneNumber);
+	} catch (error) {
+		throw new CustomError.ThirdPartyServiceError(errorMsgs.CAN_NOT_SEND_OTP)
 	}
 
-	res.status(StatusCodes.OK).json({ message: 'Please check your phonephoneNumber for reset OTP' });
+	res.status(StatusCodes.OK).json({ message: 'Please check your phone for reset OTP' });
 };
 const resetPassword = async (req, res) => {
+	/**Validate body */
+	const errrorsValidate = validationResult(req)
+	if (!errrorsValidate.isEmpty()) {
+		//for now, there is only password validator, so i return this message, if there r more validator, need to return msgs base on the errors
+		throw new CustomError.BadRequestError("Please provide a stronger password: minimum eight characters, at least one uppercase letter, one lowercase letter and one number!")
+	}
+	console.log('body:', req.body)
 	const { otp, phoneNumber, password } = req.body;
 	if (!otp || !phoneNumber || !password) {
-		throw new CustomError.BadRequestError('Please provide all values');
+		throw new CustomError.BadRequestError(errorMsgs.PROVIDE_ALL_VALUE);
 	}
 	const user = await User.findOne({ phoneNumber });
 	if (!user) {
-		throw new CustomError.NotFoundError('User doesn\'t exist, please check your phone number')
-	}
-	if (user) {
-
-		const verificationCheck = await checkVerificationOTP(otp, phoneNumber)
-
-		if (verificationCheck.status === 'approved') {
-			user.password = password;
-			await user.save();
-		} else {
-			throw new CustomError.UnauthenticatedError('Can not verify OTP')
-		}
+		throw new CustomError.NotFoundError(errorMsgs.USER_DOES_NOT_EXIST)
 	}
 
-	res.status(StatusCodes.OK).json({ message: "Reset password successfully" });
+	let verificationCheck = null
+	try {
+		verificationCheck = await checkVerificationOTP(otp, phoneNumber)
+	} catch (error) {
+		console.log('error:', error)
+		throw new CustomError.ThirdPartyServiceError(errorMsgs.VERIFY_OTP_FAILED)
+	}
+
+	if (verificationCheck.status === errorMsgs.APPROVED) {
+		user.password = password;
+		await user.save();
+		return res.status(StatusCodes.OK).json({ message: errorMsgs.APPROVED });
+	} else {
+		return res.status(StatusCodes.OK).json({ message: errorMsgs.PENDING });
+	}
 };
 
 const refreshToken = async (req, res) => {
@@ -235,17 +248,17 @@ const refreshToken = async (req, res) => {
 		console.log('existingToken: ', existingToken)
 
 		if (!existingToken || !existingToken?.isValid) {
-			throw new CustomError.UnauthenticatedError('Invalid refresh token');
+			throw new CustomError.UnauthenticatedError(errorMsgs.INVALID_REFRESH_TOKEN);
 		}
 
 		const userToken = payload.user
-		const accessTokenJWT = createJWT({ payload: { userToken }, type: 'access' })
+		const accessTokenJWT = createJWT({ payload: { userToken }, type: errorMsgs.TOKEN_TYPE_ACCESS })
 
 		req.user = payload.user;
 		res.status(StatusCodes.OK).json({ accessToken: accessTokenJWT })
 	} catch (error) {
 		console.log('error: ', error)
-		throw new CustomError.UnauthenticatedError('Invalid refresh token')
+		throw new CustomError.UnauthenticatedError(errorMsgs.INVALID_REFRESH_TOKEN)
 	}
 }
 module.exports = {

@@ -4,6 +4,8 @@ const passwordValidator = body('password').isStrongPassword({
 	minLowercase: 1,
 	minUppercase: 1,
 	minNumbers: 1,
+	minSymbols: 1
+
 })
 
 module.exports = passwordValidator

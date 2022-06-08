@@ -173,8 +173,13 @@ const login = async (req, res) => {
 	);
 };
 const logout = async (req, res) => {
-	await Token.findOneAndDelete({ user: req.user.userId });
-	res.status(StatusCodes.OK).json({ message: 'Logged out successfully' });
+	try {
+		await Token.findOneAndDelete({ user: req.user.userId });
+	} catch (error) {
+		console.log('error: logout: ', error)
+		throw new CustomError.NotFoundError('Can not found this token!')
+	}
+	res.status(StatusCodes.OK).json({ message: 'Logged out successfully!' });
 };
 
 const forgotPassword = async (req, res) => {
@@ -252,7 +257,7 @@ const refreshToken = async (req, res) => {
 		}
 
 		const userToken = payload.user
-		const accessTokenJWT = createJWT({ payload: { userToken }, type: errorMsgs.TOKEN_TYPE_ACCESS })
+		const accessTokenJWT = createJWT({ payload: { user: userToken }, type: errorMsgs.TOKEN_TYPE_ACCESS })
 
 		req.user = payload.user;
 		res.status(StatusCodes.OK).json({ accessToken: accessTokenJWT })

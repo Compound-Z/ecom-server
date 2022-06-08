@@ -4,6 +4,8 @@ const Token = require('../models/Token');
 
 const authenticateUser = async (req, res, next) => {
 	const authHeader = req.headers.authorization;
+	console.log('auth header: ', authHeader)
+	console.log('body:', req.body)
 	if (!authHeader || !authHeader.startsWith('Bearer')) {
 		throw new UnauthenticatedError('Header or token is missing')
 	}
@@ -14,7 +16,6 @@ const authenticateUser = async (req, res, next) => {
 		console.log(payload)
 		req.user = payload.user;
 		return next();
-
 	} catch (error) {
 		console.log('error: ', error)
 		throw new CustomError.UnauthenticatedError('Invalid access token');

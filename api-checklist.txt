@@ -1,0 +1,11 @@
+getAllProducts
+getProductDetails
+createProduct
+updateProduct
+deleteProduct
+
+register
+verifyOTP
+login
+logout
+refreshToken

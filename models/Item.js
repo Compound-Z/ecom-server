@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const ItemSchema = new mongoose.Schema({
 	productDetailId: {
-		type: Schema.Types.ObjectId,
+		type: mongoose.Schema.ObjectId,
 		ref: 'ProductDetail',
 		required: true
 	},
@@ -37,4 +37,8 @@ const ItemSchema = new mongoose.Schema({
 		default: 0,
 	},
 })
-module.exports = mongoose.model("Item", ItemSchema);
+const ItemModel = mongoose.model("Item", ItemSchema)
+module.exports = {
+	ItemModel,
+	ItemSchema
+}

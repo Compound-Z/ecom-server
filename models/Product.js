@@ -41,7 +41,7 @@ const ProductSchema = new mongoose.Schema(
 		},
 		averageRating: {
 			type: Number,
-			default: 0,
+			default: -1,
 		},
 		productDetailId: {
 			type: mongoose.Schema.ObjectId,

@@ -2,36 +2,32 @@ const mongoose = require('mongoose');
 
 const ReviewSchema = mongoose.Schema(
 	{
+		userId: {
+			type: mongoose.Schema.ObjectId,
+			ref: 'User',
+			required: true,
+			sparse: true,
+		},
+		userName: {
+			type: String,
+			required: [true, 'Please provide userName'],
+			minlength: 2,
+			maxlength: 50,
+		},
 		rating: {
 			type: Number,
 			min: 1,
 			max: 5,
 			required: [true, 'Please provide rating'],
 		},
-		title: {
-			type: String,
-			trim: true,
-			required: [true, 'Please provide review title'],
-			maxlength: 100,
-		},
-		comment: {
+		content: {
 			type: String,
 			required: [true, 'Please provide review text'],
-		},
-		user: {
-			type: mongoose.Schema.ObjectId,
-			ref: 'User',
-			required: true,
-		},
-		product: {
-			type: mongoose.Schema.ObjectId,
-			ref: 'Product',
-			required: true,
 		},
 	},
 	{ timestamps: true }
 );
-ReviewSchema.index({ product: 1, user: 1 }, { unique: true });
+ReviewSchema.index({ userId: 1 }, { unique: true });
 
 ReviewSchema.statics.calculateAverageRating = async function (productId) {
 	const result = await this.aggregate([
@@ -65,5 +61,8 @@ ReviewSchema.post('save', async function () {
 ReviewSchema.post('remove', async function () {
 	await this.constructor.calculateAverageRating(this.product);
 });
-
-module.exports = mongoose.model('Review', ReviewSchema);
+const ReviewModel = mongoose.model('Review', ReviewSchema);
+module.exports = {
+	ReviewModel,
+	ReviewSchema
+}

@@ -1,13 +1,8 @@
 const mongoose = require('mongoose');
-const Review = require('./Review') //todo: this should be removed when the app is done
+const { ReviewSchema } = require('./Review') //todo: this should be removed when the app is done
 
 const ProductDetailSchema = new mongoose.Schema({
-	description: {
-		type: String,
-		required: [true, 'Please provide product description'],
-		minlength: [50, 'Description need to be longer than 50 characters'],
-		maxlength: [2500, 'Description can not be more than 1000 characters'],
-	},
+
 	unit: {
 		type: String,
 		minlength: 2,
@@ -40,9 +35,14 @@ const ProductDetailSchema = new mongoose.Schema({
 		default: 0,
 	},
 	reviews: [
-		Review
+		ReviewSchema
 	],
-
+	description: {
+		type: String,
+		required: [true, 'Please provide product description'],
+		minlength: [50, 'Description need to be longer than 50 characters'],
+		maxlength: [2500, 'Description can not be more than 2500 characters'],
+	},
 	// featured: {
 	// 	type: Boolean,
 	// 	default: false,

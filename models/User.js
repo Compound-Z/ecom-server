@@ -6,7 +6,7 @@ const UserSchema = new mongoose.Schema({
 	name: {
 		type: String,
 		required: [true, 'Please provide name'],
-		minlength: 3,
+		minlength: 2,
 		maxlength: 50,
 	},
 	phoneNumber: {
@@ -17,6 +17,11 @@ const UserSchema = new mongoose.Schema({
 			validator: validator.isMobilePhone,
 			message: 'Please provide valid mobile phone number',
 		},
+	},
+	profilePictureUrl: {
+		type: String,
+		minlength: 3,
+		maxlength: 250,
 	},
 	password: {
 		type: String,
@@ -33,7 +38,12 @@ const UserSchema = new mongoose.Schema({
 		default: false,
 	},
 	verified: Date,
-});
+	cartId: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'Cart',
+		required: true,
+	},
+}, { timestamps: true });
 
 UserSchema.pre('save', async function () {
 	if (!this.isModified('password') && !this.isModified('name')) return;

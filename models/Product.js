@@ -10,50 +10,29 @@ const ProductSchema = new mongoose.Schema(
 			required: [true, 'Please provide product name'],
 			maxlength: [100, 'Name can not be more than 100 characters'],
 		},
+		sku: {
+			type: String,
+			require: [true, "Please provide SKU"]
+		},
+		isSaling: {
+			type: Boolean,
+			default: true,
+		},
 		price: {
 			type: Number,
 			required: [true, 'Please provide product price'],
 			default: 0,
 		},
-		description: {
-			type: String,
-			required: [true, 'Please provide product description'],
-			maxlength: [1000, 'Description can not be more than 1000 characters'],
-		},
-		image: {
+		imageUrl: {
 			type: String,
 			default: '/uploads/example.jpeg',
 		},
 		category: {
+			/**This is category name, not categoryId. Category name field will be
+			 * indexed in order to have covered query on category field.
+			 */
 			type: String,
 			required: [true, 'Please provide product category'],
-			enum: constant.categories,
-		},
-		brand: {
-			type: String,
-			required: [true, 'Please provide brand'],
-			enum: {
-				values: constant.brands,
-				message: '{VALUE} is not supported',
-			},
-			default: 'none',
-		},
-		featured: {
-			type: Boolean,
-			default: false,
-		},
-		freeShipping: {
-			type: Boolean,
-			default: false,
-		},
-		saleOffPercentage: {
-			type: Number,
-			default: 0
-		},
-		inventory: {
-			type: Number,
-			required: true,
-			default: 5000,
 		},
 		saleNumber: {
 			type: Number,
@@ -64,15 +43,11 @@ const ProductSchema = new mongoose.Schema(
 			type: Number,
 			default: 0,
 		},
-		numOfReviews: {
-			type: Number,
-			default: 0,
-		},
-		user: {
-			type: mongoose.Types.ObjectId,
-			ref: 'User',
+		productDetailId: {
+			type: mongoose.Schema.ObjectId,
+			ref: 'ProductDetail',
 			required: true,
-		},
+		}
 	},
 	{ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

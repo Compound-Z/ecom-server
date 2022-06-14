@@ -88,11 +88,72 @@ const deleteProduct = async (req, res) => {
 	res.status(StatusCodes.OK).json({ msg: "remove product successfully" })
 }
 
+const searchProducts = async (req, res) => {
+	/**currently, search by compounded text index: category-name */
+	/**Todo: Should be search by tags, or description? */
+	const searchWords = req.params.search_words
+
+
+	/**autocomplete search by name, category using Atlas search index instead of text index*/
+	const products = await Product.aggregate([
+		{
+			$search: {
+				compound: {
+					should: [
+						{
+
+							autocomplete: {
+								query: searchWords,
+								path: 'name'
+							},
+						},
+						{
+							autocomplete: {
+								query: searchWords,
+								path: 'category'
+							},
+						}
+					],
+				}
+			}
+		},
+		{
+			$project: {
+				score: { $meta: "searchScore" },
+			}
+		}
+		/**Todo: this may be used with project: name, limit: 5, to create search suggestions */
+		// {
+		// 	$project: {
+		// 		score: { $meta: "searchScore" },
+		// 	}
+		// }
+	])
+
+	/**Search by name and category, using text index, slower */
+	// const products = await Product.find({
+	// 	$text: {
+	// 		$search: searchWords
+	// 	}
+	// },
+	// 	{
+	// 		score: {
+	// 			$meta: "textScore"
+	// 		}
+	// 	})
+	// 	.sort({ score: { $meta: "textScore" } })
+
+
+	if (!products) throw new CustomError.NotFoundError('Not found')
+	res.status(StatusCodes.OK).json(products)
+}
+
 module.exports = {
 	getAllProducts,
 	getProductDetails,
 	createProduct,
 	uploadImage,
 	updateProduct,
-	deleteProduct
+	deleteProduct,
+	searchProducts
 }

@@ -4,7 +4,8 @@ const {
 	createProduct,
 	uploadImage,
 	updateProduct,
-	deleteProduct
+	deleteProduct,
+	searchProducts
 } = require('../controllers/productController')
 
 // const { getAllReviewsOfAProduct } = require('../controllers/reviewCotroller')
@@ -23,4 +24,5 @@ router.route('/:id')
 	.patch(/*authentication.authenticateUser, authentication.authorizeUserPermission('admin'), */updateProduct)
 	.delete(/*authentication.authenticateUser, authentication.authorizeUserPermission('admin'),*/ deleteProduct)
 // router.route('/:id/reviews').get(getAllReviewsOfAProduct)
+router.route('/search/:search_words').get(searchProducts)
 module.exports = router

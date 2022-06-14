@@ -13,6 +13,7 @@
 - [x] updateProduct
 - [x] deleteProduct
 - [x] uploadImage
+- [x] searchProduct
 
 # Category
 - [x] getAllCategories,
@@ -20,4 +21,11 @@
 - [x] createCategory,
 - [x] uploadImage,
 - [x] updateCategory,
-- [x] deleteCategory
+- [x] deleteCategorv
+# Cart
+
+# Review
+- [] getAllReviewsOfAProduct,
+- [] createReview,
+- [] updateReview,
+- [] deleteReview

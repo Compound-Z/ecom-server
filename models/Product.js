@@ -51,7 +51,7 @@ const ProductSchema = new mongoose.Schema(
 	},
 	{ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
-ProductSchema.index({ category: 1 });
+ProductSchema.index({ category: 'text', name: 'text' }, { weights: { name: 7, category: 3 } });
 
 // create virtual from Product -> Review: 1 - n
 ProductSchema.virtual('reviews', {

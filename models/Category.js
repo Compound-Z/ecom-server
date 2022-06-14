@@ -21,7 +21,7 @@ const CategorySchema = new mongoose.Schema({
 		required: true
 	},
 }, { timestamps: true });
-CategorySchema.index({ name: 1 }, { unique: true });
+CategorySchema.index({ name: 'text' }, { unique: true });
 const Category = mongoose.model("Category", CategorySchema)
 
 module.exports = Category

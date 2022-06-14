@@ -51,6 +51,7 @@ const ProductSchema = new mongoose.Schema(
 	},
 	{ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+ProductSchema.index({ category: 1 });
 
 // create virtual from Product -> Review: 1 - n
 ProductSchema.virtual('reviews', {

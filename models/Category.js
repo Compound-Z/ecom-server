@@ -1,4 +1,6 @@
-var Category = new Schema({
+const mongoose = require('mongoose');
+
+const CategorySchema = new mongoose.Schema({
 	name: {
 		type: String,
 		minlength: 2,
@@ -19,3 +21,7 @@ var Category = new Schema({
 		required: true
 	},
 }, { timestamps: true });
+CategorySchema.index({ name: 1 }, { unique: true });
+const Category = mongoose.model("Category", CategorySchema)
+
+module.exports = Category

@@ -51,14 +51,14 @@ const register = async (req, res) => {
 	//if user have not existed yet, create an Cart object and associate it with User
 	let user = null;
 	if (!existedUser) {
-		const cart = await Cart.create({})
 		user = await User.create({
 			name,
 			phoneNumber,
 			password,
 			role,
-			cartId: cart._id
 		});
+		/**after creating a brand new user, create a new cart and associate it with the just-created user */
+		const cart = await Cart.create({ userId: user._id })
 	} else {
 		user = existedUser
 	}

@@ -38,12 +38,6 @@ const UserSchema = new mongoose.Schema({
 		default: false,
 	},
 	verified: Date,
-	/**todo: create cart before creating a new user */
-	cartId: {
-		type: mongoose.Schema.ObjectId,
-		ref: 'Cart',
-		required: true,
-	},
 }, { timestamps: true });
 
 UserSchema.pre('save', async function () {

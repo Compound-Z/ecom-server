@@ -21,8 +21,15 @@
 - [x] createCategory,
 - [x] uploadImage,
 - [x] updateCategory,
-- [x] deleteCategorv
+- [x] deleteCategory
+
 # Cart
+- [] addAProductToCart,
+- [] getAllProductsInCart
+- [] deleteAProductFromCart,
+- [] adjustProductNumberInCart,
+
+# Order
 
 # Review
 - [] getAllReviewsOfAProduct,

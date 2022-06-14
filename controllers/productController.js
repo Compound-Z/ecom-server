@@ -116,11 +116,6 @@ const searchProducts = async (req, res) => {
 					],
 				}
 			}
-		},
-		{
-			$project: {
-				score: { $meta: "searchScore" },
-			}
 		}
 		/**Todo: this may be used with project: name, limit: 5, to create search suggestions */
 		// {

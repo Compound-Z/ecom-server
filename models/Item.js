@@ -13,7 +13,8 @@ const ItemSchema = new mongoose.Schema({
 	},
 	sku: {
 		type: String,
-		require: [true, "Please provide SKU"]
+		require: [true, "Please provide SKU"],
+		default: 'NONE',
 	},
 	price: {
 		type: Number,
@@ -22,7 +23,8 @@ const ItemSchema = new mongoose.Schema({
 	},
 	imageUrl: {
 		type: String,
-		default: '/uploads/example.jpeg',
+		required: [true, 'Please provide image url'],
+		// default: '/uploads/example.jpeg',
 	},
 	quantity: {
 		type: Number,
@@ -30,7 +32,7 @@ const ItemSchema = new mongoose.Schema({
 		min: 1,
 		required: true
 	},
-	weigt: {
+	weight: {
 		/**Need this info for shipping api */
 		type: Number,
 		require: [true, 'Please provide product\'s weight'],

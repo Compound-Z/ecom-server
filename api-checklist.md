@@ -4,15 +4,15 @@
 - [x] login
 - [x] logout
 - [x] refreshToken
-- [ ] forgotPassword
-- [ ] resetPassword
+- [x] forgotPassword
+- [x] resetPassword
 # Product
 - [x] getAllProducts
 - [x] getProductDetails
 - [x] createProduct
 - [x] updateProduct
 - [x] deleteProduct
-- [ ] uploadImage
+- [x] uploadImage
 
 # Category
 - [x] getAllCategories,

@@ -2,6 +2,7 @@ const Product = require('../models/Product')
 const ProductDetail = require('../models/ProductDetail')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
+const uploadFile = require('../utils/fileUploadHelper')
 
 
 const getAllProducts = async (req, res) => {
@@ -43,29 +44,7 @@ const createProduct = async (req, res) => {
 
 //todo: change to multi file upload?
 const uploadImage = async (req, res) => {
-	if (!req.files) {
-		throw new CustomError.BadRequestError('No File Uploaded');
-	}
-	const productImage = req.files.image;
-	if (!productImage.mimetype.startsWith('image')) {
-		throw new CustomError.BadRequestError('Please Upload Image');
-	}
-	const maxSize = 1024 * 1024;
-	if (productImage.size > maxSize) {
-		throw new CustomError.BadRequestError('Please upload image smaller 1MB');
-	}
-
-	console.log('req img ', req.files.image)
-	const result = await cloudinary.uploader.upload(
-		req.files.image.tempFilePath,
-		{
-			use_filename: true,
-			folder: '10-ecom'
-		}
-	)
-	fs.unlinkSync(req.files.image.tempFilePath)
-
-	res.status(StatusCodes.CREATED).json({ image: { src: result.secure_url } })
+	uploadFile(req, res, '10-ecom/product')
 }
 const updateProduct = async (req, res) => {
 	const productId = req.params.id

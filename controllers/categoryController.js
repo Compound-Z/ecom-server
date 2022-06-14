@@ -2,8 +2,7 @@ const Category = require('../models/Category')
 const Product = require('../models/Product')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
-const cloudinary = require('cloudinary').v2
-const fs = require('fs')
+const uploadFile = require('../utils/fileUploadHelper')
 
 
 const getAllCategories = async (req, res) => {
@@ -31,30 +30,7 @@ const createCategory = async (req, res) => {
 
 //todo: change to multi file upload?
 const uploadImage = async (req, res) => {
-	console.log('req:', req)
-	if (!req.files) {
-		throw new CustomError.BadRequestError('No File Uploaded');
-	}
-	const categoryImage = req.files.image;
-	if (!categoryImage.mimetype.startsWith('image')) {
-		throw new CustomError.BadRequestError('Please Upload Image');
-	}
-	const maxSize = 1024 * 1024;
-	if (categoryImage.size > maxSize) {
-		throw new CustomError.BadRequestError('Please upload image smaller 1MB');
-	}
-
-	console.log('req img ', req.files.image)
-	const result = await cloudinary.uploader.upload(
-		req.files.image.tempFilePath,
-		{
-			use_filename: true,
-			folder: '10-ecom/category'
-		}
-	)
-	fs.unlinkSync(req.files.image.tempFilePath)
-
-	res.status(StatusCodes.CREATED).json({ image: { src: result.secure_url } })
+	uploadFile(req, res, '10-ecom/category')
 }
 const updateCategory = async (req, res) => {
 	const categoryId = req.params.id

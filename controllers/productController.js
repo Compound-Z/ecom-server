@@ -13,11 +13,11 @@ const getAllProducts = async (req, res) => {
 const getProductDetails = async (req, res) => {
 	const productId = req.params.id
 
-	const product = await ProductDetail.findOne({ _id: productId })/*.populate('reviews')*/
-	if (!product) {
-		throw new CustomError.NotFoundError(`This product with id ${productId} does not exist`)
+	const productDetail = await ProductDetail.findOne({ productId: productId })/*.populate('reviews')*/
+	if (!productDetail) {
+		throw new CustomError.NotFoundError(`This productDetail with productId ${productId} does not exist`)
 	}
-	res.status(StatusCodes.OK).json(product)
+	res.status(StatusCodes.OK).json(productDetail)
 }
 
 const createProduct = async (req, res) => {
@@ -32,12 +32,18 @@ const createProduct = async (req, res) => {
 	if (!productReq || !productDetailReq) {
 		throw new CustomError.BadRequestError('productReq or productDetailReq is missing')
 	}
-	//first, create an ProductDetail object
-	const productDetail = await ProductDetail.create(productDetailReq)
 
-	//it will be replace to: take user's info from jwt: req.body.user = req.user.id
-	productReq.productDetailId = productDetail._id
+	/**First, create a product doc */
 	const product = await Product.create(productReq)
+	if (!product) {
+		throw new CustomError.ThirdPartyServiceError('Can not create Product')
+	}
+	/**then, create an ProductDetail doc and assign productId to the productDetail doc*/
+	productDetailReq.productId = product._id
+	const productDetail = await ProductDetail.create(productDetailReq)
+	if (!productDetail) {
+		throw new CustomError.ThirdPartyServiceError('Can not create ProductDetail')
+	}
 
 	res.status(StatusCodes.CREATED).json(product)
 }
@@ -59,7 +65,7 @@ const updateProduct = async (req, res) => {
 	}
 
 	const productDetail = await ProductDetail.findOneAndUpdate(
-		{ _id: product.productDetailId },
+		{ productId: productId },
 		productDetailReq,
 		{ new: true, runValidators: true })
 
@@ -71,20 +77,16 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
 	const productId = req.params.id
 
-	const product = await Product.findOne({ _id: productId })
+	const product = await Product.findOneAndDelete({ _id: productId })
 	if (!product) {
 		throw new CustomError.NotFoundError(`This product with id ${productId} does not exist`)
 	}
 
-	//delete product detail first
-	const productDetail = await ProductDetail.findOne({ _id: product.productDetailId })
+	const productDetail = await ProductDetail.findOneAndDelete({ productId: productId })
 	if (!productDetail) {
-		throw new CustomError.NotFoundError(`This productDetail with id ${product.productDetailId} does not exist`)
+		throw new CustomError.NotFoundError(`This productDetail does not exist`)
 	}
-	await productDetail.remove()
 
-	//then delete product
-	await product.remove()
 	res.status(StatusCodes.OK).json({ msg: "remove product successfully" })
 }
 

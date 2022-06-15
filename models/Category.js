@@ -6,7 +6,8 @@ const CategorySchema = new mongoose.Schema({
 		minlength: 2,
 		maxlength: 25,
 		default: "Others",
-		required: [true, 'Please provide category name']
+		required: [true, 'Please provide category name'],
+		unique: true,
 	},
 	imageUrl: {
 		type: String,

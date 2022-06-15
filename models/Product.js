@@ -43,11 +43,12 @@ const ProductSchema = new mongoose.Schema(
 			type: Number,
 			default: -1,
 		},
-		productDetailId: {
-			type: mongoose.Schema.ObjectId,
-			ref: 'ProductDetail',
-			required: true,
-		}
+		weight: {
+			/**Need this info for shipping api */
+			type: Number,
+			require: [true, 'Please provide product\'s weight'],
+			default: 0,
+		},
 	},
 	{ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

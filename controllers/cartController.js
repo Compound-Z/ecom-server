@@ -1,24 +1,53 @@
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
 const Cart = require('../models/Cart');
+const { ItemSchema } = require('../models/Item');
+const Product = require('../models/Product');
 
 
 const getAllProductsInCart = async (req, res) => {
 	const userId = req.user.userId
+
+	//get list product id in cart
 	const cart = await Cart.findOne(
 		{
 			userId: userId
 		}).select('cartItems')
-	console.log('products:', cart)
-	res.status(StatusCodes.OK).json(cart.cartItems)
+	console.log('cart:', cart)
+	if (!cart) throw new CustomError.NotFoundError('This user doesn\'t exist')
+
+	//get product info for each id
+	//create array of oid for querying
+	let oidArr = []
+	cart.cartItems.forEach(cartItem => {
+		oidArr.push(cartItem.productId)
+	});
+	console.log('oidArr:', oidArr)
+	const products = await Product.find({
+		_id: {
+			$in: oidArr
+		}
+	}).select('_id name price imageUrl weight')
+	console.log('products:', products)
+	if (!products) throw new CustomError.InternalServerError('Error')
+
+	res.status(StatusCodes.OK).json(products)
 }
 const addAProductToCart = async (req, res) => {
 	const userId = req.user.userId
-	const productDetailId = req.body.productDetailId
+	const productId = req.body.productId
+	const quantity = req.body.quantity
+
+	const product = await Product.findOne({ _id: productId })
+	console.log('product', product)
+	if (!product) {
+		throw new CustomError.NotFoundError(`Product ${productDetailId} doesn't exist`)
+	}
+
 	const existedItem = await Cart.findOne(
 		{
 			userId: userId,
-			"cartItems.productDetailId": productDetailId
+			"cartItems.productId": productId
 		}
 	)
 	console.log('existingitem:', existedItem)
@@ -28,24 +57,30 @@ const addAProductToCart = async (req, res) => {
 			{ userId: userId },
 			{
 				$push: {
-					cartItems: req.body
+					cartItems: {
+						productId,
+						quantity
+					}
 				}
 			},
-			{ new: true, runValidators: true }
+			{ new: true, runValidators: true, context: 'query' }
 		)
+		if (!cart) throw new CustomError.NotFoundError('This user does not exist')
 		res.status(StatusCodes.CREATED).json(cart)
 	} else {
 		//if item existed, update item's quantity in the cart
-		req.params.productDetailId = productDetailId
+		req.params.productId = productId
 		adjustProductQuantityInCart(req, res)
 	}
 
 }
+
+
 const adjustProductQuantityInCart = async (req, res) => {
 	console.log('params:', req.params)
 	const userId = req.user.userId
 	const newQuantity = req.body.quantity
-	const productDetailId = req.params.productDetailId
+	const productId = req.params.productId
 	if (newQuantity === 0) {
 		/**if the new quantity is ===0, delete the item from cacrt */
 		deleteProductInCart(req, res)
@@ -54,7 +89,7 @@ const adjustProductQuantityInCart = async (req, res) => {
 		const newCart = await Cart.findOneAndUpdate(
 			{
 				userId: userId,
-				"cartItems.productDetailId": productDetailId
+				"cartItems.productId": productId
 			},
 			{
 				$set: {
@@ -65,22 +100,23 @@ const adjustProductQuantityInCart = async (req, res) => {
 		)
 		if (!newCart) {
 			throw new CustomError.NotFoundError(`Item ${userId} doesn\'t exist`)
+		} else {
+			res.status(StatusCodes.OK).json(newCart)
 		}
-		res.status(StatusCodes.OK).json(newCart)
 	}
 }
 const deleteProductInCart = async (req, res) => {
 	console.log('params:', req.params)
 	const userId = req.user.userId
-	const productDetailId = req.params.productDetailId
+	const productId = req.params.productId
 	const deletedItem = await Cart.findOneAndUpdate(
 		{
 			userId: userId,
-			"cartItems.productDetailId": productDetailId
+			"cartItems.productId": productId
 		},
 		{
 			$pull: {
-				cartItems: { productDetailId: productDetailId },
+				cartItems: { productId: productId },
 			}
 		}
 	)

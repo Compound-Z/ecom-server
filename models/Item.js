@@ -5,21 +5,19 @@ const ItemSchema = new mongoose.Schema({
 		ref: 'ProductDetail',
 		required: true
 	},
+	sku: {
+		type: String,
+		require: [true, "Please provide SKU"],
+	},
 	name: {
 		type: String,
 		trim: true,
 		required: [true, 'Please provide product name'],
 		maxlength: [100, 'Name can not be more than 100 characters'],
 	},
-	sku: {
-		type: String,
-		require: [true, "Please provide SKU"],
-		default: 'NONE',
-	},
 	price: {
 		type: Number,
 		required: [true, 'Please provide product price'],
-		default: 0,
 	},
 	imageUrl: {
 		type: String,
@@ -36,7 +34,6 @@ const ItemSchema = new mongoose.Schema({
 		/**Need this info for shipping api */
 		type: Number,
 		require: [true, 'Please provide product\'s weight'],
-		default: 0,
 	},
 })
 const ItemModel = mongoose.model("Item", ItemSchema)

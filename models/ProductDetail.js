@@ -2,17 +2,16 @@ const mongoose = require('mongoose');
 const { ReviewSchema } = require('./Review') //todo: this should be removed when the app is done
 
 const ProductDetailSchema = new mongoose.Schema({
-
+	productId: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'Product',
+		required: true,
+		unique: true,
+	},
 	unit: {
 		type: String,
 		minlength: 2,
 		maxlength: 25,
-	},
-	weigt: {
-		/**Need this info for shipping api */
-		type: Number,
-		require: [true, 'Please provide product\'s weight'],
-		default: 0,
 	},
 	brandName: {
 		type: String,
@@ -62,4 +61,6 @@ const ProductDetailSchema = new mongoose.Schema({
 	// },
 }, { timestamps: true }
 );
+ProductDetailSchema.index({ productId: 1 }, { unique: true });
+
 module.exports = mongoose.model('ProductDetail', ProductDetailSchema)

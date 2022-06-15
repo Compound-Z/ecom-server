@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { ItemSchema } = require('./Item');
+const { OrderItemSchema } = require('./OrderItem');
 const Address = require('./Address');
 const OrderUser = require('./OrderUser');
 const Billing = require('./Billing');
@@ -7,7 +7,7 @@ const ShippingDetail = require('./ShippingDetail');
 const OrderSchema = new mongoose.Schema({
 	user: OrderUser,
 	address: Address,
-	orderItems: [ItemSchema],
+	orderItems: [OrderItemSchema],
 	billing: Billing,
 	status: {
 		type: String,

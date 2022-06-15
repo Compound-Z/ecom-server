@@ -27,7 +27,7 @@ const getAllProductsInCart = async (req, res) => {
 		_id: {
 			$in: oidArr
 		}
-	}).select('_id name price imageUrl weight')
+	}).select('_id name price imageUrl quantity weight')
 	console.log('products:', products)
 	if (!products) throw new CustomError.InternalServerError('Error')
 

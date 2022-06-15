@@ -10,7 +10,6 @@ const ShippingDetailSchema = new mongoose.Schema({
 	},
 	shippingOrderId: {
 		type: String,
-		require: true
 	}
 })
 module.exports = mongoose.model("ShippingDetail", ShippingDetailSchema);

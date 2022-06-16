@@ -1,0 +1,2 @@
+- [] Address: when user create new address, the address info should be retrieved from API of Shipping Provider. Since the system need to synchronize with the shipping system, this indentical address-shipping information will help a lot. 
+The responses of Provice api show that the api data has not changed since 2019, so it's better to store that info in static file in the system, instead of calling api everytime the system need it.

@@ -1,9 +1,8 @@
 const Address = require('../models/Address')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
-//GHN
-import GHN from 'giaohangnhanh'
-const ghn = new GHN(process.env.GHN_API_KEY_TEST, { test: true });
+const ghnAPI = require('../services/ghn/ghnAPI');
+const { findOneAndUpdate } = require('../models/Address');
 
 const getAllAddresses = async (req, res) => {
 	const addresses = await Address.find({
@@ -11,10 +10,120 @@ const getAllAddresses = async (req, res) => {
 	})
 	res.status(StatusCodes.OK).json(addresses)
 }
+//todo: check child belongs to parent
+const createAddress = async (req, res) => {
+	const userId = req.user.userId
+	const { provinceId, districtId, wardCode, detailedAddress, isDefaultAddress,
+		receiverName, receiverPhoneNumber } = req.body
 
-const getListProvinces = async (req, res) => {
-	const provinces = await ghn.address.getProvinces();
-	res.status(StatusCodes.OK).json(provinces)
+	let address = await Address.findOne({
+		userId
+	})
+
+	/**get address info from ghn api */
+	const provinces = await ghnAPI.addressAPI.getProvinces()
+	let province = null
+	provinces.every(item => {
+		if (item.province_id === provinceId) {
+			province = item
+			return false
+		}
+		return true
+	});
+	if (!province) throw new CustomError.NotFoundError('Can not find province')
+
+	const districts = await ghnAPI.addressAPI.getDistricts(provinceId)
+	let district = null
+	districts.every(item => {
+		if (item.district_id === districtId) {
+			district = item
+			return false
+		}
+		return true
+	});
+	if (!district) throw new CustomError.NotFoundError('Can not find district')
+
+	const wards = await ghnAPI.addressAPI.getWards(districtId)
+	let ward = null
+	wards.every(item => {
+		if (item.code === wardCode) {
+			ward = item
+			return false
+		}
+		return true
+	});
+	if (!ward) throw new CustomError.NotFoundError('Can not find ward')
+
+
+	const addressItem = {
+		receiverName,
+		receiverPhoneNumber,
+		province: {
+			provinceId,
+			name: province.name,
+			code: province.code,
+		},
+		district: {
+			districtId,
+			provinceId,
+			name: district.name,
+			code: district.code,
+		},
+		ward: {
+			districtId,
+			name: ward.name,
+			code: ward.code,
+		},
+		detailedAddress
+	}
+	if (!address) {
+		//create new address object on db with one address item
+		address = await Address.create({
+			userId,
+			addresses: [addressItem],
+			defaultAddressIndex: 0,
+		})
+
+		res.status(StatusCodes.CREATED).json(address)
+	} else {
+		//push new address item
+		address = await Address.findOneAndUpdate({
+			userId
+		}, {
+			$push: {
+				addresses: addressItem
+			}
+		}, { new: true, runValidators: true }
+		)
+		res.status(StatusCodes.OK).json(address)
+	}
+}
+
+const getProvinces = async (req, res) => {
+	const provinces = await ghnAPI.addressAPI.getProvinces()
+	if (!Array.isArray(provinces)) {
+		throw new CustomError.NotFoundError('Can not find provinces')
+	} else {
+		res.status(StatusCodes.OK).json(provinces)
+	}
+}
+const getDistricts = async (req, res) => {
+	const provinceId = req.params.province_id
+	const districts = await ghnAPI.addressAPI.getDistricts(provinceId)
+	if (!Array.isArray(districts)) {
+		throw new CustomError.NotFoundError('Can not find districts')
+	} else {
+		res.status(StatusCodes.OK).json(districts)
+	}
+}
+const getWards = async (req, res) => {
+	const districtId = req.params.district_id
+	const wards = await ghnAPI.addressAPI.getWards(districtId)
+	if (!Array.isArray(wards)) {
+		throw new CustomError.NotFoundError('Can not find wards')
+	} else {
+		res.status(StatusCodes.OK).json(wards)
+	}
 }
 
 // const addAddress = async (req, res) => {
@@ -63,7 +172,10 @@ const getListProvinces = async (req, res) => {
 
 module.exports = {
 	getAllAddresses,
-	getListProvinces,
+	createAddress,
+	getProvinces,
+	getDistricts,
+	getWards
 	// createCategory,
 	// uploadImage,
 	// updateCategory,

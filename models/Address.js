@@ -9,5 +9,10 @@ const AddressSchema = new mongoose.Schema({
 	addresses: [
 		AddressItemSchema
 	],
+	defaultAddressIndex: {
+		type: Number,
+		min: 0,
+		require: true,
+	},
 })
 module.exports = mongoose.model("Address", AddressSchema);

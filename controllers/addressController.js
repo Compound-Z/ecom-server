@@ -6,7 +6,7 @@ const { findOneAndUpdate } = require('../models/Address');
 
 const getAllAddresses = async (req, res) => {
 	const addresses = await Address.find({
-		userId
+		userId: req.user.userId
 	})
 	res.status(StatusCodes.OK).json(addresses)
 }
@@ -19,7 +19,111 @@ const createAddress = async (req, res) => {
 	let address = await Address.findOne({
 		userId
 	})
+	const { province, district, ward } = await getAndCheckAddress(provinceId, districtId, wardCode)
 
+	const addressItem = getAddressItemObj(provinceId, province, districtId, district, wardCode, ward, detailedAddress, receiverName, receiverPhoneNumber)
+
+	if (!address) {
+		//create new address object on db with one address item
+		address = await Address.create({
+			userId,
+			addresses: [addressItem]
+		})
+		if (!address) throw new CustomError.ThirdPartyServiceError('Can not create address')
+		address.defaultAddressId = address.addresses[0]._id
+		await address.save()
+		res.status(StatusCodes.CREATED).json(address)
+	} else {
+		//push new address item
+		address = await Address.findOneAndUpdate({
+			userId
+		}, {
+			$push: {
+				addresses: addressItem
+			}
+		}, { new: true, runValidators: true }
+		)
+		if (!address) throw new CustomError.NotFoundError('Can not find address')
+		if (isDefaultAddress) address.defaultAddressId = address.addresses[address.addresses.length - 1].id
+		await address.save()
+		res.status(StatusCodes.OK).json(address)
+	}
+}
+const editAddressItem = async (req, res) => {
+	const userId = req.user.userId
+	const addressItemId = req.params.address_item_id
+	const {
+		provinceId, districtId, wardCode, detailedAddress, isDefaultAddress,
+		receiverName, receiverPhoneNumber } = req.body
+
+	const { province, district, ward } = await getAndCheckAddress(provinceId, districtId, wardCode)
+	const newAddressItem = getAddressItemObj(provinceId, province, districtId, district, wardCode, ward, detailedAddress, receiverName, receiverPhoneNumber)
+	let address = null
+	if (!isDefaultAddress) {
+		address = await Address.findOneAndUpdate({
+			userId,
+			"addresses._id": addressItemId,
+		}, {
+			$set: {
+				"addresses.$.receiverName": newAddressItem.receiverName,
+				"addresses.$.receiverPhoneNumber": newAddressItem.receiverPhoneNumber,
+				"addresses.$.province": newAddressItem.province,
+				"addresses.$.district": newAddressItem.district,
+				"addresses.$.ward": newAddressItem.ward,
+				"addresses.$.detailedAddress": newAddressItem.detailedAddress,
+			}
+		}, { new: true, runValidators: true }
+		)
+		if (!address) throw new CustomError.NotFoundError('Can not find address')
+	} else {
+		address = await Address.findOneAndUpdate({
+			userId,
+			"addresses._id": addressItemId,
+		}, {
+			$set: {
+				"addresses.$.receiverName": newAddressItem.receiverName,
+				"addresses.$.receiverPhoneNumber": newAddressItem.receiverPhoneNumber,
+				"addresses.$.province": newAddressItem.province,
+				"addresses.$.district": newAddressItem.district,
+				"addresses.$.ward": newAddressItem.ward,
+				"addresses.$.detailedAddress": newAddressItem.detailedAddress,
+				defaultAddressId: addressItemId
+			}
+		}, { new: true, runValidators: true }
+		)
+		if (!address) throw new CustomError.NotFoundError('Can not find address')
+		address.defaultAddressId = addressItemId
+		await address.save()
+	}
+
+	if (!address) throw new CustomError.NotFoundError('This address does not exist')
+
+	res.status(StatusCodes.OK).json(address)
+}
+const getAddressItemObj = (provinceId, province, districtId, district, wardCode, ward, detailedAddress, receiverName, receiverPhoneNumber) => {
+	return {
+		receiverName,
+		receiverPhoneNumber,
+		province: {
+			provinceId,
+			name: province.name,
+			code: province.code,
+		},
+		district: {
+			districtId,
+			provinceId,
+			name: district.name,
+			code: district.code,
+		},
+		ward: {
+			districtId,
+			name: ward.name,
+			code: ward.code,
+		},
+		detailedAddress
+	}
+}
+const getAndCheckAddress = async (provinceId, districtId, wardCode) => {
 	/**get address info from ghn api */
 	const provinces = await ghnAPI.addressAPI.getProvinces()
 	let province = null
@@ -54,55 +158,9 @@ const createAddress = async (req, res) => {
 	});
 	if (!ward) throw new CustomError.NotFoundError(`Can not find ward or This ward does not belong to ${district.name}`)
 
-
-	const addressItem = {
-		id: provinceId.toString() + districtId.toString() + wardCode + '|' + detailedAddress + '|' + Date.now(),
-		receiverName,
-		receiverPhoneNumber,
-		province: {
-			provinceId,
-			name: province.name,
-			code: province.code,
-		},
-		district: {
-			districtId,
-			provinceId,
-			name: district.name,
-			code: district.code,
-		},
-		ward: {
-			districtId,
-			name: ward.name,
-			code: ward.code,
-		},
-		detailedAddress
-	}
-	if (!address) {
-		//create new address object on db with one address item
-		address = await Address.create({
-			userId,
-			addresses: [addressItem],
-			defaultAddressId: addressItem.id,
-		})
-
-		res.status(StatusCodes.CREATED).json(address)
-	} else {
-		//push new address item
-		const defaultAddressId = (isDefaultAddress === true) ? addressItem.id : address.defaultAddressId
-		address = await Address.findOneAndUpdate({
-			userId
-		}, {
-			$push: {
-				addresses: addressItem
-			},
-			$set: {
-				defaultAddressId: defaultAddressId
-			}
-		}, { new: true, runValidators: true }
-		)
-		res.status(StatusCodes.OK).json(address)
-	}
+	return { province, district, ward }
 }
+
 
 const getProvinces = async (req, res) => {
 	const provinces = await ghnAPI.addressAPI.getProvinces()
@@ -131,53 +189,10 @@ const getWards = async (req, res) => {
 	}
 }
 
-// const addAddress = async (req, res) => {
-// 	//for now, user will be hardcoded: 
-// 	console.log('body: ', req.body)
-// 	req.body.user = 'test_user_id'
-
-// 	const { name, imageUrl, numberOfProduct } = req.body
-
-// 	const category = await Category.create({
-// 		name, imageUrl, numberOfProduct
-// 	})
-
-// 	res.status(StatusCodes.CREATED).json(category)
-// }
-
-// //todo: change to multi file upload?
-// const uploadImage = async (req, res) => {
-// 	uploadFile(req, res, '10-ecom/category')
-// }
-// const updateCategory = async (req, res) => {
-// 	const categoryId = req.params.id
-// 	const { name, imageUrl, numberOfProduct } = req.body
-// 	const category = await Category.findOneAndUpdate(
-// 		{ _id: categoryId },
-// 		{ name, imageUrl, numberOfProduct },
-// 		{ new: true, runValidators: true })
-
-// 	if (!category) {
-// 		throw new CustomError.NotFoundError(`This category with id ${categoryId} does not exist`)
-// 	}
-
-// 	res.status(StatusCodes.OK).json(category)
-// }
-// const deleteCategory = async (req, res) => {
-// 	const categoryId = req.params.id
-
-// 	const category = await Category.findOne({ _id: categoryId })
-// 	if (!category) {
-// 		throw new CustomError.NotFoundError(`This category with id ${categoryId} does not exist`)
-// 	}
-
-// 	await category.remove()
-// 	res.status(StatusCodes.OK).json({ msg: "remove category successfully" })
-// }
-
 module.exports = {
 	getAllAddresses,
 	createAddress,
+	editAddressItem,
 	getProvinces,
 	getDistricts,
 	getWards

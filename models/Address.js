@@ -12,7 +12,6 @@ const AddressSchema = new mongoose.Schema({
 	defaultAddressId: {
 		type: String,
 		minlength: 0,
-		require: true,
 	},
 })
 module.exports = mongoose.model("Address", AddressSchema);

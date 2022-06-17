@@ -1,6 +1,7 @@
 const {
 	getAllAddresses,
 	createAddress,
+	editAddressItem,
 	getProvinces,
 	getDistricts,
 	getWards,
@@ -19,6 +20,7 @@ router.route('/districts/:province_id')
 	.get(authentication.authenticateUser, getDistricts)
 router.route('/wards/:district_id')
 	.get(authentication.authenticateUser, getWards)
+router.route('/:address_item_id').patch(authentication.authenticateUser, editAddressItem)
 // router.route('/:id')
 // 	.get(getProductDetails)
 // 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateProduct)

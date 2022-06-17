@@ -13,12 +13,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const giaohangnhanh_1 = __importDefault(require("giaohangnhanh"));
-const ghn = new giaohangnhanh_1.default(process.env.GHN_API_KET_TEST ? process.env.GHN_API_KET_TEST : "", { test: true });
+const ghn = new giaohangnhanh_1.default(process.env.GHN_API_KEY ? process.env.GHN_API_KEY : "", { test: false });
+const serviceAndCalculateFeeAPIAxios = require('./serviceAndCalculateFeeAPIAxios');
 const calculateFee = (fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue) => __awaiter(void 0, void 0, void 0, function* () {
     const shopId = parseInt(process.env.SHOP_ID + '');
-    const services = yield ghn.service.getServices(shopId, fromDistrictId, toDistrictId);
+    const services = yield serviceAndCalculateFeeAPIAxios.getServices(shopId, fromDistrictId, toDistrictId);
+    console.log('services:', services);
     const feeOptions = [];
-    services.array.forEach((service) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('service:', services);
+    for (const service of services.data) {
         const fee = yield ghn.service.calculateFee(shopId, {
             service_id: service.service_id,
             insurance_value: insuranceValue,
@@ -29,8 +32,27 @@ const calculateFee = (fromDistrictId, toDistrictId, toWardCode, weight, length, 
             width: width,
             height: height
         });
-        feeOptions.push({ service_id: service.service_id, name: service.name, fee });
-    }));
+        console.log('fee', fee);
+        if (!fee.message)
+            feeOptions.push({ service_id: service.service_id, name: service.short_name, fee });
+    }
+    // services.data.forEach(async (service: { service_id: number; short_name: string; }) => {
+    // 	const fee = await ghn.service.calculateFee(
+    // 		shopId,
+    // 		{
+    // 			service_id: service.service_id,
+    // 			insurance_value: insuranceValue,
+    // 			to_district_id: toDistrictId,
+    // 			to_ward_code: toWardCode,
+    // 			weight: weight,
+    // 			length: length,
+    // 			width: width,
+    // 			height: height
+    // 		}
+    // 	)
+    // 	console.log('fee', fee)
+    // 	feeOptions.push({ service_id: service.service_id, name: service.short_name, fee })
+    // });
     return feeOptions;
 });
 const calculateExpectedDeliveryTime = (provinceId) => __awaiter(void 0, void 0, void 0, function* () {

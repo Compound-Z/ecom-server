@@ -2,7 +2,7 @@ const Order = require('../models/Order')
 const Product = require('../models/Product')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
-const Address = require('../models/Address');
+const { Address } = require('../models/Address');
 const ghnAPI = require('../services/ghn/ghnAPI');
 const constant = require('../utils/constants')
 const createOrder = async (req, res) => {
@@ -65,7 +65,6 @@ const createOrder = async (req, res) => {
 		//handle: resturn and exception
 	}
 }
-//todo:
 const getShippingFeeOptions = async (req, res) => {
 	const userId = req.user.userId
 	const addressItemId = req.body.addressItemId
@@ -84,25 +83,30 @@ const getShippingFeeOptions = async (req, res) => {
 		}
 	})
 	if (!address) throw new CustomError.NotFoundError('Address does not exist')
-
+	console.log('address ward', address.addresses[0].ward)
 	const products = []
-	for (const item of cartItems) {
+	for (const [idx, item] of cartItems.entries()) {
 		const product = await Product.findOne({ _id: item.productId })
 		if (!product) throw new CustomError.NotFoundError(`Produdct ${item.productId} does not exist`)
-		product.push(product)
+		product.quantity = cartItems[idx].quantity
+		products.push(product)
 	};
 
 	let totalWeight = 0
 	let totalProductCost = 0
-	products.array.forEach(product => {
-		totalWeight += product.weight
-		totalProductCost += product.price
+	products.forEach(product => {
+		totalWeight += product.weight * product.quantity
+		totalProductCost += product.price * product.quantity
 	});
 
+	console.log('products:', products)
+	console.log(`weight: ${totalWeight} cost: ${totalProductCost}`)
+	console.log(`toDis: ${address.addresses[0].district.districtId} toWard: ${address.addresses[0].ward.code}`)
+	console.log('xxx', constant.shipping.PACKAGE_LENGTH_DEFAULT)
 	const feeOptions = await ghnAPI.serviceAndCalculateFeeAPI.calculateFee(
-		process.env.SHOP_DISTRICT_ID,
+		parseInt(process.env.SHOP_DISTRICT_ID),
 		address.addresses[0].district.districtId,
-		address.addresses[0].ward.wardCode,
+		address.addresses[0].ward.code,
 		totalWeight,
 		constant.shipping.PACKAGE_LENGTH_DEFAULT,
 		constant.shipping.PACKAGE_WIDTH_DEFAULT,
@@ -112,7 +116,8 @@ const getShippingFeeOptions = async (req, res) => {
 
 	res.status(StatusCodes.OK).json(feeOptions)
 }
-// calculateBilling //calculate total weight also
+// estimate time
+// calculateBilling 
 // getShippingDetails
 
 module.exports = {

@@ -80,8 +80,6 @@ const addAProductToCart = async (req, res) => {
 	}
 
 }
-
-
 const adjustProductQuantityInCart = async (req, res) => {
 	console.log('params:', req.params)
 	const userId = req.user.userId

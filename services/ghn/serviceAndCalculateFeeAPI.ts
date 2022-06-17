@@ -1,14 +1,22 @@
 import GHN from "giaohangnhanh";
-const ghn: GHN = new GHN(process.env.GHN_API_KET_TEST ? process.env.GHN_API_KET_TEST : "", { test: true })
+const ghn: GHN = new GHN(process.env.GHN_API_KEY ? process.env.GHN_API_KEY : "", { test: false })
+const serviceAndCalculateFeeAPIAxios = require('./serviceAndCalculateFeeAPIAxios')
 const calculateFee = async (
 	fromDistrictId: number, toDistrictId: number, toWardCode: string,
 	weight: number, length: number, width: number, height: number,
 	insuranceValue: number) => {
 	const shopId = parseInt(process.env.SHOP_ID + '')
-	const services = await ghn.service.getServices(shopId, fromDistrictId, toDistrictId)
+
+	const services = await serviceAndCalculateFeeAPIAxios.getServices(
+		shopId,
+		fromDistrictId,
+		toDistrictId,
+	)
+	console.log('services:', services)
 
 	const feeOptions: { service_id: number; name: string; fee: any; }[] = []
-	services.array.forEach(async (service: { service_id: number; name: string; }) => {
+	console.log('service:', services)
+	for (const service of services.data) {
 		const fee = await ghn.service.calculateFee(
 			shopId,
 			{
@@ -22,8 +30,10 @@ const calculateFee = async (
 				height: height
 			}
 		)
-		feeOptions.push({ service_id: service.service_id, name: service.name, fee })
-	});
+		console.log('fee', fee)
+		if (!fee.message)
+			feeOptions.push({ service_id: service.service_id, name: service.short_name, fee })
+	}
 	return feeOptions
 }
 const calculateExpectedDeliveryTime = async (provinceId: number) => {

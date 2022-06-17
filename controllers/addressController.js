@@ -100,6 +100,37 @@ const editAddressItem = async (req, res) => {
 
 	res.status(StatusCodes.OK).json(address)
 }
+
+const deleteAddressItem = async (req, res) => {
+	const userId = req.user.userId
+	const addressItemId = req.params.address_item_id
+	let address = await Address.findOne({
+		userId,
+		"addresses._id": addressItemId
+	})
+	if (!address) throw new CustomError.NotFoundError('Can not find address')
+
+	if (address.defaultAddressId === addressItemId) {
+		throw new CustomError.BadRequestError('Can not delete default address')
+	} else {
+		address = await Address.findOneAndUpdate(
+			{
+				userId,
+				"addresses._id": addressItemId
+			}, {
+			$pull: {
+				addresses: {
+					_id: addressItemId
+				}
+			}
+		}, { new: true, runValidators: true }
+		)
+		if (!address) {
+			throw new CustomError.NotFoundError(`Address or cart doesn\'t exist`)
+		}
+		res.status(StatusCodes.OK).json(address)
+	}
+}
 const getAddressItemObj = (provinceId, province, districtId, district, wardCode, ward, detailedAddress, receiverName, receiverPhoneNumber) => {
 	return {
 		receiverName,
@@ -161,7 +192,6 @@ const getAndCheckAddress = async (provinceId, districtId, wardCode) => {
 	return { province, district, ward }
 }
 
-
 const getProvinces = async (req, res) => {
 	const provinces = await ghnAPI.addressAPI.getProvinces()
 	if (!Array.isArray(provinces)) {
@@ -193,6 +223,7 @@ module.exports = {
 	getAllAddresses,
 	createAddress,
 	editAddressItem,
+	deleteAddressItem,
 	getProvinces,
 	getDistricts,
 	getWards

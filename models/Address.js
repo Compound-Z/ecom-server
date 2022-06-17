@@ -9,9 +9,9 @@ const AddressSchema = new mongoose.Schema({
 	addresses: [
 		AddressItemSchema
 	],
-	defaultAddressIndex: {
-		type: Number,
-		min: 0,
+	defaultAddressId: {
+		type: String,
+		minlength: 0,
 		require: true,
 	},
 })

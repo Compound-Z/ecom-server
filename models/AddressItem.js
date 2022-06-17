@@ -52,6 +52,12 @@ const WardSchema = mongoose.Schema({
 	},
 })
 const AddressItemSchema = new mongoose.Schema({
+	id: {
+		type: String,
+		minlength: 0,
+		required: true,
+		unique: [true, 'This address does exist, please try onother']
+	},
 	receiverName: {
 		type: String,
 		minlength: 2,

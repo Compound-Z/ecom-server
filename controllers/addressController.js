@@ -10,10 +10,10 @@ const getAllAddresses = async (req, res) => {
 	})
 	res.status(StatusCodes.OK).json(addresses)
 }
-//todo: check child belongs to parent
 const createAddress = async (req, res) => {
 	const userId = req.user.userId
-	const { provinceId, districtId, wardCode, detailedAddress, isDefaultAddress,
+	const {
+		provinceId, districtId, wardCode, detailedAddress, isDefaultAddress,
 		receiverName, receiverPhoneNumber } = req.body
 
 	let address = await Address.findOne({
@@ -41,7 +41,7 @@ const createAddress = async (req, res) => {
 		}
 		return true
 	});
-	if (!district) throw new CustomError.NotFoundError('Can not find district')
+	if (!district) throw new CustomError.NotFoundError(`Can not find district or This district does not belong to ${province.name}`)
 
 	const wards = await ghnAPI.addressAPI.getWards(districtId)
 	let ward = null
@@ -52,10 +52,11 @@ const createAddress = async (req, res) => {
 		}
 		return true
 	});
-	if (!ward) throw new CustomError.NotFoundError('Can not find ward')
+	if (!ward) throw new CustomError.NotFoundError(`Can not find ward or This ward does not belong to ${district.name}`)
 
 
 	const addressItem = {
+		id: provinceId.toString() + districtId.toString() + wardCode + '|' + detailedAddress + '|' + Date.now(),
 		receiverName,
 		receiverPhoneNumber,
 		province: {
@@ -81,17 +82,21 @@ const createAddress = async (req, res) => {
 		address = await Address.create({
 			userId,
 			addresses: [addressItem],
-			defaultAddressIndex: 0,
+			defaultAddressId: addressItem.id,
 		})
 
 		res.status(StatusCodes.CREATED).json(address)
 	} else {
 		//push new address item
+		const defaultAddressId = (isDefaultAddress === true) ? addressItem.id : address.defaultAddressId
 		address = await Address.findOneAndUpdate({
 			userId
 		}, {
 			$push: {
 				addresses: addressItem
+			},
+			$set: {
+				defaultAddressId: defaultAddressId
 			}
 		}, { new: true, runValidators: true }
 		)

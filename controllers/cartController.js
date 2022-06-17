@@ -27,10 +27,16 @@ const getAllProductsInCart = async (req, res) => {
 		_id: {
 			$in: oidArr
 		}
-	}).select('_id name price imageUrl quantity weight')
+	}).select('_id name price imageUrl quantity weight').lean()
+
 	console.log('products:', products)
 	if (!products) throw new CustomError.InternalServerError('Error')
 
+	//assign quantity
+	products.forEach((element, idx) => {
+		element["quantity"] = cart.cartItems[idx].quantity
+		element["productId"] = cart.cartItems[idx].productId
+	});
 	res.status(StatusCodes.OK).json(products)
 }
 const addAProductToCart = async (req, res) => {

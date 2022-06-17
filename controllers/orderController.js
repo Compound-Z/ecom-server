@@ -1,8 +1,10 @@
 const Order = require('../models/Order')
+const Product = require('../models/Product')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
 const Address = require('../models/Address');
-
+const ghnAPI = require('../services/ghn/ghnAPI');
+const constant = require('../utils/constants')
 const createOrder = async (req, res) => {
 	console.log('body: ', req.body)
 	req.body.user = 'test_user_id'
@@ -64,6 +66,55 @@ const createOrder = async (req, res) => {
 	}
 }
 //todo:
-calculateShippingFee
-calculateBilling //calculate total weight also
-getShippingDetails
+const getShippingFeeOptions = async (req, res) => {
+	const userId = req.user.userId
+	const addressItemId = req.body.addressItemId
+	const cartItems = req.body.cartItems
+
+	if (cartItems.length == 0) throw new CustomError.BadRequestError('No item to calculate fee')
+
+	const address = await Address.findOne({
+		userId,
+		"addresses._id": addressItemId
+	}, {
+		addresses: {
+			$elemMatch: {
+				_id: addressItemId
+			}
+		}
+	})
+	if (!address) throw new CustomError.NotFoundError('Address does not exist')
+
+	const products = []
+	for (const item of cartItems) {
+		const product = await Product.findOne({ _id: item.productId })
+		if (!product) throw new CustomError.NotFoundError(`Produdct ${item.productId} does not exist`)
+		product.push(product)
+	};
+
+	let totalWeight = 0
+	let totalProductCost = 0
+	products.array.forEach(product => {
+		totalWeight += product.weight
+		totalProductCost += product.price
+	});
+
+	const feeOptions = await ghnAPI.serviceAndCalculateFeeAPI.calculateFee(
+		process.env.SHOP_DISTRICT_ID,
+		address.addresses[0].district.districtId,
+		address.addresses[0].ward.wardCode,
+		totalWeight,
+		constant.shipping.PACKAGE_LENGTH_DEFAULT,
+		constant.shipping.PACKAGE_WIDTH_DEFAULT,
+		constant.shipping.PACKAGE_HEIGHT_DEFAULT,
+		totalProductCost
+	)
+
+	res.status(StatusCodes.OK).json(feeOptions)
+}
+// calculateBilling //calculate total weight also
+// getShippingDetails
+
+module.exports = {
+	getShippingFeeOptions
+}

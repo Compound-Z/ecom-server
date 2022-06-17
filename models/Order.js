@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 const { OrderItemSchema } = require('./OrderItem');
-const Address = require('./Address');
-const OrderUser = require('./OrderUser');
-const Billing = require('./Billing');
-const ShippingDetail = require('./ShippingDetail');
+const { AddressSchema } = require('./Address');
+const { OrderUserSchema } = require('./OrderUser');
+const { BillingSchema } = require('./Billing');
+const { ShippingDetailSchema } = require('./ShippingDetail');
 const OrderSchema = new mongoose.Schema({
-	user: OrderUser,
-	address: Address,
+	user: OrderUserSchema,
+	address: AddressSchema,
 	orderItems: [OrderItemSchema],
-	billing: Billing,
+	billing: BillingSchema,
 	status: {
 		type: String,
 		enum: [
@@ -27,6 +27,6 @@ const OrderSchema = new mongoose.Schema({
 		type: String,
 		maxlength: 250
 	},
-	shippingDetails: ShippingDetail
+	shippingDetails: ShippingDetailSchema
 }, { timestamps: true })
 module.exports = mongoose.model("Order", OrderSchema);

@@ -1,11 +1,11 @@
-const Address = require('../models/Address')
+const { AddressModel } = require('../models/Address')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
 const ghnAPI = require('../services/ghn/ghnAPI');
 const { findOneAndUpdate } = require('../models/Address');
 
 const getAllAddresses = async (req, res) => {
-	const addresses = await Address.find({
+	const addresses = await AddressModel.findOne({
 		userId: req.user.userId
 	})
 	res.status(StatusCodes.OK).json(addresses)
@@ -16,7 +16,7 @@ const createAddress = async (req, res) => {
 		provinceId, districtId, wardCode, detailedAddress, isDefaultAddress,
 		receiverName, receiverPhoneNumber } = req.body
 
-	let address = await Address.findOne({
+	let address = await AddressModel.findOne({
 		userId
 	})
 	const { province, district, ward } = await getAndCheckAddress(provinceId, districtId, wardCode)
@@ -25,7 +25,7 @@ const createAddress = async (req, res) => {
 
 	if (!address) {
 		//create new address object on db with one address item
-		address = await Address.create({
+		address = await AddressModel.create({
 			userId,
 			addresses: [addressItem]
 		})
@@ -35,7 +35,7 @@ const createAddress = async (req, res) => {
 		res.status(StatusCodes.CREATED).json(address)
 	} else {
 		//push new address item
-		address = await Address.findOneAndUpdate({
+		address = await AddressModel.findOneAndUpdate({
 			userId
 		}, {
 			$push: {
@@ -60,7 +60,7 @@ const editAddressItem = async (req, res) => {
 	const newAddressItem = getAddressItemObj(provinceId, province, districtId, district, wardCode, ward, detailedAddress, receiverName, receiverPhoneNumber)
 	let address = null
 	if (!isDefaultAddress) {
-		address = await Address.findOneAndUpdate({
+		address = await AddressModel.findOneAndUpdate({
 			userId,
 			"addresses._id": addressItemId,
 		}, {
@@ -76,7 +76,7 @@ const editAddressItem = async (req, res) => {
 		)
 		if (!address) throw new CustomError.NotFoundError('Can not find address')
 	} else {
-		address = await Address.findOneAndUpdate({
+		address = await AddressModel.findOneAndUpdate({
 			userId,
 			"addresses._id": addressItemId,
 		}, {
@@ -104,7 +104,7 @@ const editAddressItem = async (req, res) => {
 const deleteAddressItem = async (req, res) => {
 	const userId = req.user.userId
 	const addressItemId = req.params.address_item_id
-	let address = await Address.findOne({
+	let address = await AddressModel.findOne({
 		userId,
 		"addresses._id": addressItemId
 	})
@@ -113,7 +113,7 @@ const deleteAddressItem = async (req, res) => {
 	if (address.defaultAddressId === addressItemId) {
 		throw new CustomError.BadRequestError('Can not delete default address')
 	} else {
-		address = await Address.findOneAndUpdate(
+		address = await AddressModel.findOneAndUpdate(
 			{
 				userId,
 				"addresses._id": addressItemId

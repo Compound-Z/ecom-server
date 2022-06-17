@@ -12,4 +12,8 @@ const ShippingDetailSchema = new mongoose.Schema({
 		type: String,
 	}
 })
-module.exports = mongoose.model("ShippingDetail", ShippingDetailSchema);
+const ShippingDetailModel = mongoose.model("ShippingDetail", ShippingDetailSchema);
+module.exports = {
+	ShippingDetailSchema,
+	ShippingDetailModel
+}

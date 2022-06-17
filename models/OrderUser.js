@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const OrderUserSchema = new mongoose.Schema({
 	userId: {
-		type: Schema.Types.ObjectId,
+		type: mongoose.Schema.ObjectId,
 		ref: 'User',
 		required: true
 	},
@@ -11,4 +11,8 @@ const OrderUserSchema = new mongoose.Schema({
 		maxlength: 50
 	}
 })
-module.exports = mongoose.model("OrderUser", OrderUserSchema);
+const OrderUserModel = mongoose.model("OrderUser", OrderUserSchema);
+module.exports = {
+	OrderUserSchema,
+	OrderUserModel
+}

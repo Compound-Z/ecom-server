@@ -12,7 +12,7 @@ const ProductSchema = new mongoose.Schema(
 		},
 		sku: {
 			type: String,
-			require: [true, "Please provide SKU"]
+			required: [true, "Please provide SKU"]
 		},
 		isSaling: {
 			type: Boolean,
@@ -46,7 +46,7 @@ const ProductSchema = new mongoose.Schema(
 		weight: {
 			/**Need this info for shipping api */
 			type: Number,
-			require: [true, 'Please provide product\'s weight'],
+			required: [true, 'Please provide product\'s weight'],
 			default: 0,
 		},
 	},

@@ -9,7 +9,7 @@ const BillingSchema = new mongoose.Schema({
 		type: Number,
 		required: true
 	},
-	total: {
+	estimatedShippingFee: {
 		type: Number,
 		required: true,
 	},

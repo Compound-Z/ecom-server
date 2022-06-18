@@ -1,70 +1,122 @@
 const Order = require('../models/Order')
 const Product = require('../models/Product')
+const User = require('../models/User')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
 const { Address } = require('../models/Address');
 const ghnAPI = require('../services/ghn/ghnAPI');
 const constant = require('../utils/constants')
+const { deleteManyProductsInCart } = require('./cartController')
 const createOrder = async (req, res) => {
 	console.log('body: ', req.body)
 	req.body.user = 'test_user_id'
 
 	const userId = req.user.userId
-	const cartItems = req.body.cartItems
+	const orderItems = req.body.orderItems
 	const paymentMethod = req.body.paymentMethod
-	const addressId = req.body.addressId
+	const addressItemId = req.body.addressItemId
 	const note = req.body.note
 	const shippingProvider = req.body.shippingProvider
+	const shippingServiceId = req.body.shippingServiceId
 
+	//get userInfo
+	const user = await User.findOne({
+		_id: userId
+	}).select('name phoneNumber')
+
+	if (orderItems.length == 0) throw new CustomError.BadRequestError('The order can not be empty')
+	console.log('orderItems', orderItems)
 	//get list ordered products
 	let oidArr = []
-	cartItems.forEach(cartItem => {
-		oidArr.push(cartItem.productId)
+	orderItems.forEach(orderItem => {
+		oidArr.push(orderItem.productId)
 	});
 	console.log('oidArr:', oidArr)
 	const products = await Product.find({
 		_id: {
 			$in: oidArr
 		}
-	}).select('_id sku name category price imageUrl quantity weight')
-	console.log('products:', products)
+	}).select('_id sku name category price imageUrl quantity weight').lean()
 	if (!products) throw new CustomError.InternalServerError('Error')
 
 	//get address
 	const address = await Address.findOne({
 		userId,
-		"address._id": addressId
+		"addresses._id": addressItemId
+	}, {
+		addresses: {
+			$elemMatch: {
+				_id: addressItemId
+			}
+		}
 	})
-	console.log('address:', address)
-	if (!products) throw new CustomError.NotFoundError('Can not find address')
+	if (!address) throw new CustomError.NotFoundError('Address does not exist')
+
+	//get total weight and product cost
+	let totalWeight = 0
+	let totalProductCost = 0
+	for (const [idx, item] of orderItems.entries()) {
+		products[idx].quantity = item.quantity
+		products[idx].productId = item.productId
+		totalWeight += products[idx].weight * products[idx].quantity
+		totalProductCost += products[idx].price * products[idx].quantity
+	};
+	console.log('products:', products)
+	console.log('totalWeight:', totalWeight)
+	console.log('totalProductCost:', totalProductCost)
 
 	//get shipping fee
-	const shippingFee = calculateShippingFee(address, shippingProvider)
-	//get Billing Info
-	const billing = calculateBilling(products, shippingFee, paymentMethod)
-	//get shipping details
-	const shippingDetails = getShippingDetails(shippingProvider)
-	//create an order doc
-	const userOrder = new userOrder({ userId, name: req.user.name })
+	const estimatedShippingFee = await ghnAPI.serviceAndCalculateFeeAPI.calculateFee(
+		shippingServiceId,
+		parseInt(process.env.SHOP_DISTRICT_ID),
+		address.addresses[0].district.districtId,
+		address.addresses[0].ward.code,
+		totalWeight,
+		constant.shipping.PACKAGE_LENGTH_DEFAULT,
+		constant.shipping.PACKAGE_WIDTH_DEFAULT,
+		constant.shipping.PACKAGE_HEIGHT_DEFAULT,
+		totalProductCost
+	)
+	console.log('shipping fee:', estimatedShippingFee)
+	const userOrder = createUserOrder(userId, user.name, user.phoneNumber)
+	const billing = createBilling(totalProductCost, estimatedShippingFee, paymentMethod)
+	const shippingDetails = createShippingDetails(shippingProvider)
+
 	const order = await Order.create({
 		user: userOrder,
-		address,
+		address: address.addresses[0],
 		orderItems: products,
 		billing,
 		note,
 		shippingDetails
 	})
-
-	if (paymentMethod === 'COD') {
-		res.status(StatusCodes.CREATED).json({
-			paymentMethod,
-			order
-		})
-	} else {
-		createPaymentOrder(paymentMethod, products)
-		//handle: resturn and exception
+	if (!order) {
+		throw new CustomError.InternalServerError('System Error: Can not create new order')
 	}
+
+
+	//delete product in cart after ordering
+	await deleteManyProductsInCart(userId, orderItems)
+
+	// if (paymentMethod === 'COD') {
+	// 	res.status(StatusCodes.CREATED).json({
+	// 		paymentMethod,
+	// 		orders
+	// 	})
+	// } else {
+	// 	createPaymentOrder(paymentMethod, products)
+	// 	//handle: resturn and exception
+	// }
+	res.status(StatusCodes.CREATED).json(order)
 }
+
+//todo:
+// const getMyOrders
+// const getAllOrders
+// const getOrderDetails
+// const confirmOrder
+// const cancelOrder
+
 const getShippingFeeOptions = async (req, res) => {
 	const userId = req.user.userId
 	const addressItemId = req.body.addressItemId
@@ -103,7 +155,7 @@ const getShippingFeeOptions = async (req, res) => {
 	console.log(`weight: ${totalWeight} cost: ${totalProductCost}`)
 	console.log(`toDis: ${address.addresses[0].district.districtId} toWard: ${address.addresses[0].ward.code}`)
 	console.log('xxx', constant.shipping.PACKAGE_LENGTH_DEFAULT)
-	const feeOptions = await ghnAPI.serviceAndCalculateFeeAPI.calculateFee(
+	const feeOptions = await ghnAPI.serviceAndCalculateFeeAPI.calculateFeeOptions(
 		parseInt(process.env.SHOP_DISTRICT_ID),
 		address.addresses[0].district.districtId,
 		address.addresses[0].ward.code,
@@ -116,10 +168,25 @@ const getShippingFeeOptions = async (req, res) => {
 
 	res.status(StatusCodes.OK).json(feeOptions)
 }
-// estimate time
-// calculateBilling 
+
+const createBilling = (totalProductCost, estimatedShippingFee, paymentMethod) => {
+	return {
+		subTotal: totalProductCost,
+		shippingFee: estimatedShippingFee.total,
+		estimatedShippingFee: estimatedShippingFee.total,
+		//for now, payment method is commented out bcs system only support default payment method: COD
+		// paymentMethod: paymentMethod
+	}
+}
+const createShippingDetails = (shippingProvider) => {
+	return {}
+}
+const createUserOrder = (userId, name, phoneNumber) => {
+	return { userId, name, phoneNumber }
+}
 // getShippingDetails
 
 module.exports = {
+	createOrder,
 	getShippingFeeOptions
 }

@@ -1,4 +1,5 @@
-const { StatusCodes } = require('http-status-codes')
+const { StatusCodes } = require('http-status-codes');
+const { connect } = require('http2');
 const CustomError = require('../errors');
 const Cart = require('../models/Cart');
 const { ItemSchema } = require('../models/Item');
@@ -47,7 +48,7 @@ const addAProductToCart = async (req, res) => {
 	const product = await Product.findOne({ _id: productId })
 	console.log('product', product)
 	if (!product) {
-		throw new CustomError.NotFoundError(`Product ${productDetailId} doesn't exist`)
+		throw new CustomError.NotFoundError(`Product ${productId} doesn't exist`)
 	}
 
 	const existedItem = await Cart.findOne(
@@ -130,9 +131,36 @@ const deleteProductInCart = async (req, res) => {
 	res.status(StatusCodes.OK).json({ msg: "Remove item from cart successfully" })
 
 }
+const deleteManyProductsInCart = async (userId, cartItems) => {
+	const cartItemIds = []
+	cartItems.forEach(item => {
+		cartItemIds.push(item.productId)
+	});
+
+	const cart = await Cart.findOne(
+		{
+			userId: userId,
+		}
+	)
+	console.log('cartItemIds', cartItemIds)
+
+	cart.cartItems = cart.cartItems.filter(function (item) {
+		console.log('item', item)
+		console.log('include', cartItemIds.includes(item.productId.toString()))
+		return !cartItemIds.includes(item.productId.toString())
+	})
+	console.log('cart', cart)
+	const deletedCart = await cart.save()
+	console.log('deleted cart', deletedCart)
+	if (!deletedCart) {
+		throw new CustomError.NotFoundError(`Product or cart doesn\'t exist`)
+	}
+	return true
+}
 module.exports = {
 	getAllProductsInCart,
 	addAProductToCart,
 	adjustProductQuantityInCart,
 	deleteProductInCart,
+	deleteManyProductsInCart,
 }

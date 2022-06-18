@@ -6,9 +6,9 @@ const ShippingDetailSchema = new mongoose.Schema({
 			'GHN',
 			'GHTK',
 		],
-		default: 'GHTK'
+		default: 'GHN'
 	},
-	shippingOrderId: {
+	shippingOrderCode: {
 		type: String,
 	}
 })

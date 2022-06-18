@@ -1,4 +1,5 @@
 const {
+	createOrder,
 	getShippingFeeOptions
 } = require('../controllers/orderController')
 
@@ -8,8 +9,8 @@ const router = express.Router()
 const authentication = require('../middleware/authentication')
 
 
-// router.route('/')
-// 	.get(getAllProducts)
+router.route('/')
+	.post(authentication.authenticateUser, createOrder)
 // 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createProduct)
 router.route('/shipping-fee')
 	.get(authentication.authenticateUser, getShippingFeeOptions)

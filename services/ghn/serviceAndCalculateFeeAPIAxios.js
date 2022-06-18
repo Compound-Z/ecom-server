@@ -1,5 +1,5 @@
 const axios = require('axios').default;
-const token = process.env.GHN_API_KET_TEST
+const token = process.env.GHN_API_KEY_TEST
 const getServices = async (
 	shopId, fromDistrictId, toDistrictId) => {
 	let services = null

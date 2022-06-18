@@ -18,6 +18,7 @@ const createOrder = async (req, res) => {
 	const note = req.body.note
 	const shippingProvider = req.body.shippingProvider
 	const shippingServiceId = req.body.shippingServiceId
+	const shippingServiceTypeId = req.body.shippingServiceTypeId
 
 	//get userInfo
 	const user = await User.findOne({
@@ -80,7 +81,7 @@ const createOrder = async (req, res) => {
 	console.log('shipping fee:', estimatedShippingFee)
 	const userOrder = createUserOrder(userId, user.name, user.phoneNumber)
 	const billing = createBilling(totalProductCost, estimatedShippingFee, paymentMethod)
-	const shippingDetails = createShippingDetails(shippingProvider)
+	const shippingDetails = createShippingDetails(totalWeight, shippingProvider, shippingServiceId, shippingServiceTypeId)
 
 	const order = await Order.create({
 		user: userOrder,
@@ -95,7 +96,7 @@ const createOrder = async (req, res) => {
 	}
 
 
-	//delete product in cart after ordering
+	//delete products in cart after ordering
 	await deleteManyProductsInCart(userId, orderItems)
 
 	// if (paymentMethod === 'COD') {
@@ -176,13 +177,15 @@ const startProcessingOrder = async (req, res) => {
 	const orderId = req.params.order_id
 	const userId = req.user.userId
 	const user = await User.findOne({
-		"user.userId": userId,
 		_id: userId
 	})
 	if (!user) throw CustomError.NotFoundError('User does not exist')
-	console.log('orderId', orderId)
+	console.log('user', user)
 	const order = await Order.findOneAndUpdate({
-		_id: orderId
+		_id: orderId,
+		status: {
+			$in: constant.processableStatus
+		}
 	}, {
 		$set: {
 			status: 'PROCESSING',
@@ -193,7 +196,7 @@ const startProcessingOrder = async (req, res) => {
 	}, { new: true, runValidators: true })
 	if (!order) {
 		console.log('order', order)
-		throw CustomError.NotFoundError('Order does not exist')
+		throw new CustomError.NotFoundError('Order does not exist or you can not update order status to PROCESSING')
 	}
 
 	//todo: notify user/or can do caching to compare old data vs new data, so that the app can show red noti
@@ -202,6 +205,8 @@ const startProcessingOrder = async (req, res) => {
 
 }
 //admin only
+
+//todo: add option, confirming without creating shipping order
 const confirmOrder = async (req, res) => {
 	/**Confirming means the shop has packed the order and transfer to shipping provider */
 	const userId = req.user.userId
@@ -223,12 +228,30 @@ const confirmOrder = async (req, res) => {
 			"employee.phoneNumber": user.phoneNumber
 		}
 	}, { new: true, runValidators: true })
-	if (!order) throw CustomError.NotFoundError('Order does not exist')
+	if (!order) throw new CustomError.NotFoundError('Order does not exist')
 
+	//only create new shipping order if there is no one
+	if (!order.shippingDetails.expectedDeliveryTime) {
+		const shippingOrder = await ghnAPI.orderAPI.createOrder(order)
+		console.log('shippingOrder', shippingOrder)
+		if (shippingOrder.message) {
+			//if failed creating shipping order, revert confirming order.
+			order.status = 'PROCESSING'
+			await order.save()
+			throw new CustomError.InternalServerError(`Can not create shipping order: ${shippingOrder.message}`)
+		}
+		//todo: store shipping information
+		order.shippingDetails.shippingOrderCode = shippingOrder.order_code
+		order.shippingDetails.transType = shippingOrder.trans_type
+		order.shippingDetails.mainServiceFee = shippingOrder.fee.main_service
+		order.shippingDetails.insurance = shippingOrder.fee.insurance
+		order.shippingDetails.totalFee = shippingOrder.total_fee
+		order.shippingDetails.expectedDeliveryTime = shippingOrder.expected_delivery_time
+		await order.save()
+	}
 
-	//todo: create a shipping order
 	//todo: notify user
-	res.status(StatusCodes.OK).json(order)
+	res.status(StatusCodes.OK).json({ order })
 }
 //admin only
 const cancelOrder = async (req, res) => {
@@ -244,7 +267,6 @@ const cancelOrder = async (req, res) => {
 	const order = await Order.findOne({
 		_id: orderId,
 		"user.userId": userId,
-
 	})
 	if (!order) throw new CustomError.NotFoundError('Order does not exist')
 
@@ -254,12 +276,12 @@ const cancelOrder = async (req, res) => {
 		order.employee.userId = userId
 		order.employee.name = user.name
 		order.employee.phoneNumber = user.phoneNumber
+		await order.save()
 	} else {
 		throw new CustomError.BadRequestError('Can not update order status, the order has already been confirmed!')
 	}
-	const canceledOrder = await order.save()
 	//todo: notify user
-	res.status(StatusCodes.OK).json(canceledOrder)
+	res.status(StatusCodes.OK).json(order)
 }
 
 const getShippingFeeOptions = async (req, res) => {
@@ -323,8 +345,8 @@ const createBilling = (totalProductCost, estimatedShippingFee, paymentMethod) =>
 		// paymentMethod: paymentMethod
 	}
 }
-const createShippingDetails = (shippingProvider) => {
-	return {}
+const createShippingDetails = (totalWeight, shippingProvider, shippingServiceId, shippingServiceTypeId) => {
+	return { weight: totalWeight, shippingServiceId, shippingServiceTypeId }
 }
 const createUserOrder = (userId, name, phoneNumber) => {
 	return { userId, name, phoneNumber }

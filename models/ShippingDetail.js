@@ -1,5 +1,10 @@
 const mongoose = require('mongoose');
 const ShippingDetailSchema = new mongoose.Schema({
+	weight: {
+		type: Number,
+		required: true,
+		default: 0,
+	},
 	shippingProvider: {
 		type: String,
 		enum: [
@@ -8,8 +13,31 @@ const ShippingDetailSchema = new mongoose.Schema({
 		],
 		default: 'GHN'
 	},
+	shippingServiceId: {
+		type: Number,
+		required: true,
+	},
+	shippingServiceTypeId: {
+		type: Number,
+		required: true,
+	},
 	shippingOrderCode: {
 		type: String,
+	},
+	transType: {
+		type: String,
+	},
+	mainServiceFee: {
+		type: Number,
+	},
+	insurance: {
+		type: Number
+	},
+	totalFee: {
+		type: Number
+	},
+	expectedDeliveryTime: {
+		type: String
 	}
 })
 const ShippingDetailModel = mongoose.model("ShippingDetail", ShippingDetailSchema);

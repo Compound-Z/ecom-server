@@ -157,6 +157,8 @@ const getAddressItemObj = (provinceId, province, districtId, district, wardCode,
 const getAndCheckAddress = async (provinceId, districtId, wardCode) => {
 	/**get address info from ghn api */
 	const provinces = await ghnAPI.addressAPI.getProvinces()
+	if (provinces.message) throw new CustomError.InternalServerError('Can not find provinces')
+	console.log("provinces:", provinces)
 	let province = null
 	provinces.every(item => {
 		if (item.province_id === provinceId) {
@@ -166,8 +168,9 @@ const getAndCheckAddress = async (provinceId, districtId, wardCode) => {
 		return true
 	});
 	if (!province) throw new CustomError.NotFoundError('Can not find province')
-
 	const districts = await ghnAPI.addressAPI.getDistricts(provinceId)
+	if (districts.message) throw new CustomError.InternalServerError('Can not find districts')
+
 	let district = null
 	districts.every(item => {
 		if (item.district_id === districtId) {
@@ -179,6 +182,7 @@ const getAndCheckAddress = async (provinceId, districtId, wardCode) => {
 	if (!district) throw new CustomError.NotFoundError(`Can not find district or This district does not belong to ${province.name}`)
 
 	const wards = await ghnAPI.addressAPI.getWards(districtId)
+	if (wards.message) throw new CustomError.InternalServerError('Can not find wards')
 	let ward = null
 	wards.every(item => {
 		if (item.code === wardCode) {

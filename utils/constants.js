@@ -20,4 +20,5 @@ shipping = {
 	PACKAGE_LENGTH_DEFAULT: 30,
 	PACKAGE_HEIGHT_DEFAULT: 15,
 }
-module.exports = { brands, categories, shipping }
+cancelableStatus = ['PENDING', 'PROCESSING']
+module.exports = { brands, categories, shipping, cancelableStatus }

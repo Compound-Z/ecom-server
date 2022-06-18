@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const giaohangnhanh_1 = __importDefault(require("giaohangnhanh"));
-const ghn = new giaohangnhanh_1.default(process.env.GHN_API_KET_TEST ? process.env.GHN_API_KET_TEST : "", { test: true });
+const ghn = new giaohangnhanh_1.default(process.env.GHN_API_KEY_TEST ? process.env.GHN_API_KEY_TEST : "", { test: true });
 const getProvinces = () => __awaiter(void 0, void 0, void 0, function* () {
     return ghn.address.getProvinces();
 });

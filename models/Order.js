@@ -25,6 +25,7 @@ const OrderSchema = new mongoose.Schema({
 		type: String,
 		enum: [
 			"PENDING",
+			"PROCESSING",
 			"PAID",
 			"CONFIRMED",
 			"CANCELED",
@@ -42,6 +43,7 @@ const OrderSchema = new mongoose.Schema({
 	shippingDetails: {
 		type: ShippingDetailSchema,
 		required: true
-	}
+	},
+	employee: OrderUserSchema,
 }, { timestamps: true })
 module.exports = mongoose.model("Order", OrderSchema);

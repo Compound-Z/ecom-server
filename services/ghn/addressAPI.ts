@@ -1,5 +1,5 @@
 import GHN from "giaohangnhanh";
-const ghn: GHN = new GHN(process.env.GHN_API_KET_TEST ? process.env.GHN_API_KET_TEST : "", { test: true })
+const ghn: GHN = new GHN(process.env.GHN_API_KEY_TEST ? process.env.GHN_API_KEY_TEST : "", { test: true })
 const getProvinces = async () => {
 	return ghn.address.getProvinces()
 }

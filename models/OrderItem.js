@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
-const ItemSchema = new mongoose.Schema({
-	productDetailId: {
+const OrderItemSchema = new mongoose.Schema({
+	productId: {
 		type: mongoose.Schema.ObjectId,
-		ref: 'ProductDetail',
+		ref: 'Product',
 		required: true
 	},
 	sku: {
@@ -36,8 +36,8 @@ const ItemSchema = new mongoose.Schema({
 		require: [true, 'Please provide product\'s weight'],
 	},
 })
-const ItemModel = mongoose.model("Item", ItemSchema)
+const OrderItemModel = mongoose.model("OrderItem", OrderItemSchema)
 module.exports = {
-	ItemModel,
-	ItemSchema
+	OrderItemModel,
+	OrderItemSchema
 }

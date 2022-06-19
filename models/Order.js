@@ -1,20 +1,31 @@
 const mongoose = require('mongoose');
-const Item = require('./Item');
-const Address = require('./Address');
-const OrderUser = require('./OrderUser');
-const Billing = require('./Billing');
-const ShippingDetail = require('./ShippingDetail');
+const { OrderItemSchema } = require('./OrderItem');
+const { AddressItemSchema } = require('./AddressItem');
+const { OrderUserSchema } = require('./OrderUser');
+const { BillingSchema } = require('./Billing');
+const { ShippingDetailSchema } = require('./ShippingDetail');
 const OrderSchema = new mongoose.Schema({
-	user: OrderUser,
-	address: Address,
-	orderItems: [
-		Item
-	],
-	billing: Billing,
+	user: {
+		type: OrderUserSchema,
+		required: true
+	},
+	address: {
+		type: AddressItemSchema,
+		required: true
+	},
+	orderItems: {
+		type: [OrderItemSchema],
+		required: true
+	},
+	billing: {
+		type: BillingSchema,
+		required: true
+	},
 	status: {
 		type: String,
 		enum: [
-			"NOT_PAID",
+			"PENDING",
+			"PROCESSING",
 			"PAID",
 			"CONFIRMED",
 			"CANCELED",
@@ -22,13 +33,17 @@ const OrderSchema = new mongoose.Schema({
 			"DELIVERED",
 			"RECEIVED"
 		],
-		default: "NOT_PAID",
+		default: "PENDING",
 		required: true
 	},
 	note: {
 		type: String,
 		maxlength: 250
 	},
-	shippingDetails: ShippingDetail
+	shippingDetails: {
+		type: ShippingDetailSchema,
+		required: true
+	},
+	employee: OrderUserSchema,
 }, { timestamps: true })
 module.exports = mongoose.model("Order", OrderSchema);

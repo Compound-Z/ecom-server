@@ -15,4 +15,12 @@ categories = [
 	//
 	'Others'
 ]
-module.exports = { brands, categories }
+shipping = {
+	PACKAGE_WIDTH_DEFAULT: 20,
+	PACKAGE_LENGTH_DEFAULT: 30,
+	PACKAGE_HEIGHT_DEFAULT: 15,
+}
+processableStatus = ['PENDING']
+cancelableStatus = ['PENDING', 'PROCESSING']
+
+module.exports = { brands, categories, shipping, cancelableStatus, processableStatus }

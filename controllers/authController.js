@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Cart = require('../models/Cart')
 const Token = require('../models/Token');
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
@@ -47,14 +48,23 @@ const register = async (req, res) => {
 		await existedUser.save()
 	}
 
-	const user = existedUser ? existedUser : await User.create({
-		name,
-		phoneNumber,
-		password,
-		role
-	});
+	//if user have not existed yet, create an Cart object and associate it with User
+	let user = null;
+	if (!existedUser) {
+		user = await User.create({
+			name,
+			phoneNumber,
+			password,
+			role,
+		});
+		/**after creating a brand new user, create a new cart and associate it with the just-created user */
+		const cart = await Cart.create({ userId: user._id })
+	} else {
+		user = existedUser
+	}
 
-	//todo: enable this to send otp
+	if (!user) throw new CustomError.InternalServerError('Internal system error!')
+
 	let verification = null
 	try {
 		verification = await sendVerificationOTP(user.phoneNumber);

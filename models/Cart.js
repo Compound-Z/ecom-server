@@ -1,8 +1,15 @@
 const mongoose = require('mongoose');
-const Item = require('./Item');
+const { CartItemSchema } = require('./CartItem');
 const CartSchema = new mongoose.Schema({
-	cartItems: [
-		Item
-	]
+	cartItems: {
+		type: [CartItemSchema],
+		required: true,
+	},
+	userId: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'User',
+		required: true,
+	},
 })
+CartSchema.index({ userId: 1 });
 module.exports = mongoose.model("Cart", CartSchema);

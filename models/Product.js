@@ -12,7 +12,7 @@ const ProductSchema = new mongoose.Schema(
 		},
 		sku: {
 			type: String,
-			require: [true, "Please provide SKU"]
+			required: [true, "Please provide SKU"]
 		},
 		isSaling: {
 			type: Boolean,
@@ -43,14 +43,16 @@ const ProductSchema = new mongoose.Schema(
 			type: Number,
 			default: 0,
 		},
-		productDetailId: {
-			type: mongoose.Schema.ObjectId,
-			ref: 'ProductDetail',
-			required: true,
-		}
+		weight: {
+			/**Need this info for shipping api */
+			type: Number,
+			required: [true, 'Please provide product\'s weight'],
+			default: 0,
+		},
 	},
 	{ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+ProductSchema.index({ category: 'text', name: 'text' }, { weights: { name: 7, category: 3 } });
 
 // create virtual from Product -> Review: 1 - n
 ProductSchema.virtual('reviews', {

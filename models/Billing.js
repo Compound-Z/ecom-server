@@ -9,7 +9,7 @@ const BillingSchema = new mongoose.Schema({
 		type: Number,
 		required: true
 	},
-	total: {
+	estimatedShippingFee: {
 		type: Number,
 		required: true,
 	},
@@ -25,4 +25,8 @@ const BillingSchema = new mongoose.Schema({
 		required: true
 	}
 })
-module.exports = mongoose.model("Billing", BillingSchema);
+const BillingModel = mongoose.model("Billing", BillingSchema);
+module.exports = {
+	BillingSchema,
+	BillingModel
+}

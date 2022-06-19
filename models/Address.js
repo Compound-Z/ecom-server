@@ -1,54 +1,21 @@
 const mongoose = require('mongoose');
-
+const { AddressItemSchema } = require('./AddressItem')
 const AddressSchema = new mongoose.Schema({
-	isDefaultAddress: {
-		type: Boolean,
-		default: false,
-		required: true
+	userId: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'User',
+		required: true,
 	},
-	receiverName: {
+	addresses: [
+		AddressItemSchema
+	],
+	defaultAddressId: {
 		type: String,
-		minlength: 2,
-		maxlength: 25,
-		required: true
+		minlength: 0,
 	},
-	receiverPhoneNumber: {
-		type: String,
-		match: "^(0|\+84?)(3[2-9]|5[6|8|9]|7[0|6-9]|8[0-6|8|9]|9[0-4|6-9])[0-9]{7}$",
-		required: true
-	},
-	province: {
-		type: String,
-		minlength: 2,
-		maxlength: 25,
-		required: true
-	},
-	district: {
-		type: String,
-		minlength: 2,
-		maxlength: 25,
-		required: true
-	},
-	village: {
-		type: String,
-		minlength: 2,
-		maxlength: 25,
-		required: true
-	},
-	detailedAddress: {
-		type: String,
-		minlength: 5,
-		maxlength: 50,
-		required: true
-	},
-	addressType: {
-		type: String,
-		enum: [
-			"HOME",
-			"OFFICE"
-		],
-		default: "HOME",
-		required: true
-	}
 })
-module.exports = mongoose.model("Address", AddressSchema);
+const Address = mongoose.model("Address", AddressSchema);
+module.exports = {
+	AddressSchema,
+	Address
+}

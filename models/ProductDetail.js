@@ -1,23 +1,17 @@
 const mongoose = require('mongoose');
-const Review = require('./Review') //todo: this should be removed when the app is done
+const { ReviewSchema } = require('./Review') //todo: this should be removed when the app is done
 
 const ProductDetailSchema = new mongoose.Schema({
-	description: {
-		type: String,
-		required: [true, 'Please provide product description'],
-		minlength: [50, 'Description need to be longer than 50 characters'],
-		maxlength: [2500, 'Description can not be more than 1000 characters'],
+	productId: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'Product',
+		required: true,
+		unique: true,
 	},
 	unit: {
 		type: String,
 		minlength: 2,
 		maxlength: 25,
-	},
-	weigt: {
-		/**Need this info for shipping api */
-		type: Number,
-		require: [true, 'Please provide product\'s weight'],
-		default: 0,
 	},
 	brandName: {
 		type: String,
@@ -40,9 +34,14 @@ const ProductDetailSchema = new mongoose.Schema({
 		default: 0,
 	},
 	reviews: [
-		Review
+		ReviewSchema
 	],
-
+	description: {
+		type: String,
+		required: [true, 'Please provide product description'],
+		minlength: [50, 'Description need to be longer than 50 characters'],
+		maxlength: [2500, 'Description can not be more than 2500 characters'],
+	},
 	// featured: {
 	// 	type: Boolean,
 	// 	default: false,
@@ -62,4 +61,6 @@ const ProductDetailSchema = new mongoose.Schema({
 	// },
 }, { timestamps: true }
 );
+ProductDetailSchema.index({ productId: 1 }, { unique: true });
+
 module.exports = mongoose.model('ProductDetail', ProductDetailSchema)

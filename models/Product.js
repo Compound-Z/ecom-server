@@ -41,7 +41,7 @@ const ProductSchema = new mongoose.Schema(
 		},
 		averageRating: {
 			type: Number,
-			default: -1,
+			default: 0,
 		},
 		weight: {
 			/**Need this info for shipping api */

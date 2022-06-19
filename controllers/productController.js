@@ -7,6 +7,7 @@ const uploadFile = require('../utils/fileUploadHelper')
 
 const getAllProducts = async (req, res) => {
 	const products = await Product.find({}).select('-user -createdAt -updatedAt -__v -id')
+	if (!products) throw new CustomError.NotFoundError('Not found')
 	res.status(StatusCodes.OK).json(products)
 }
 
@@ -95,7 +96,6 @@ const searchProducts = async (req, res) => {
 	/**Todo: Should be search by tags, or description? */
 	const searchWords = req.params.search_words
 
-
 	/**autocomplete search by name, category using Atlas search index instead of text index*/
 	const products = await Product.aggregate([
 		{
@@ -126,20 +126,6 @@ const searchProducts = async (req, res) => {
 		// 	}
 		// }
 	])
-
-	/**Search by name and category, using text index, slower */
-	// const products = await Product.find({
-	// 	$text: {
-	// 		$search: searchWords
-	// 	}
-	// },
-	// 	{
-	// 		score: {
-	// 			$meta: "textScore"
-	// 		}
-	// 	})
-	// 	.sort({ score: { $meta: "textScore" } })
-
 
 	if (!products) throw new CustomError.NotFoundError('Not found')
 	res.status(StatusCodes.OK).json(products)

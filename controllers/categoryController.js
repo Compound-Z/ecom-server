@@ -12,7 +12,26 @@ const getAllCategories = async (req, res) => {
 const getAllProductOfACategory = async (req, res) => {
 	const categoryName = req.params.name
 	const products = await Product.find({ category: categoryName })
-	res.status(StatusCodes.OK).json({ products })
+	res.status(StatusCodes.OK).json(products)
+}
+const searchProductsInCategory = async (req, res) => {
+	const categoryName = req.params.category_name
+	const searchWordsProduct = req.body.searchWordsProduct
+	console.log(categoryName, searchWordsProduct)
+	const products = await Product.aggregate(
+		[{
+			$search: {
+				autocomplete: {
+					query: searchWordsProduct,
+					path: 'name'
+				}
+			}
+		},
+		{
+			$match: { category: categoryName }
+		}
+		])
+	res.status(StatusCodes.OK).json(products)
 }
 const createCategory = async (req, res) => {
 	//for now, user will be hardcoded: 
@@ -61,6 +80,7 @@ const deleteCategory = async (req, res) => {
 module.exports = {
 	getAllCategories,
 	getAllProductOfACategory,
+	searchProductsInCategory,
 	createCategory,
 	uploadImage,
 	updateCategory,

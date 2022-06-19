@@ -1,6 +1,7 @@
 const {
 	getAllCategories,
 	getAllProductOfACategory,
+	searchProductsInCategory,
 	createCategory,
 	uploadImage,
 	updateCategory,
@@ -18,8 +19,10 @@ router.route('/')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createCategory)
 router.route('/uploadImage')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
+router.route('/search/:category_name')
+	.post(authentication.authenticateUser, searchProductsInCategory)
 router.route('/:id')
 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateCategory)
 	.delete(authentication.authenticateUser, authentication.authorizePermissions('admin'), deleteCategory)
-router.route('/:name/products').get(getAllProductOfACategory)
+router.route('/:name').get(getAllProductOfACategory)
 module.exports = router

@@ -19,10 +19,14 @@ router.route('/')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createProduct)
 router.route('/uploadImage')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
+
+router.route('/search/').get(getAllProducts)
+router.route('/search/:search_words').get(searchProducts)
+
 router.route('/:id')
 	.get(getProductDetails)
 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateProduct)
 	.delete(authentication.authenticateUser, authentication.authorizePermissions('admin'), deleteProduct)
 // router.route('/:id/reviews').get(getAllReviewsOfAProduct)
-router.route('/search/:search_words').get(searchProducts)
+
 module.exports = router

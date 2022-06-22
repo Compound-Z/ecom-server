@@ -11,7 +11,7 @@ categories = [
 	//milk
 	'Milk and Milk Products',
 	//
-	'Bathroom Toiletriess and Cleaners ',
+	'Bathroom Toiletriess and Cleaners',
 	//
 	'Others'
 ]

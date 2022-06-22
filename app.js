@@ -45,7 +45,7 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/products', routerProduct)
 app.use('/api/v1/categories', categoryRouter)
-app.use('/api/v1/carts', cartRouter)
+app.use('/api/v1/cart', cartRouter)
 app.use('/api/v1/addresses', addressRouter)
 app.use('/api/v1/orders', orderRouter)
 

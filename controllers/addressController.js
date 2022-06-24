@@ -207,6 +207,7 @@ const getProvinces = async (req, res) => {
 const getDistricts = async (req, res) => {
 	const provinceId = req.params.province_id
 	const districts = await ghnAPI.addressAPI.getDistricts(provinceId)
+	console.log('districts:', districts)
 	if (!Array.isArray(districts)) {
 		throw new CustomError.NotFoundError('Can not find districts')
 	} else {

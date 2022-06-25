@@ -5,6 +5,7 @@ const {
 	getAllOrders,
 	getOrderDetails,
 	updateOrderStatus,
+	cancelOrder,
 } = require('../controllers/orderController')
 
 // const { getAllReviewsOfAProduct } = require('../controllers/reviewCotroller')
@@ -18,7 +19,7 @@ router.route('/')
 	.post(authentication.authenticateUser, createOrder)
 // 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createProduct)
 router.route('/my-orders')
-	.get(authentication.authenticateUser, getMyOrders)
+	.post(authentication.authenticateUser, getMyOrders)
 router.route('/shipping-fee')
 	.post(authentication.authenticateUser, getShippingFeeOptions)
 // router.route('/update-status')
@@ -29,5 +30,6 @@ router.route('/shipping-fee')
 router.route('/:order_id')
 	.get(authentication.authenticateUser, getOrderDetails)
 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateOrderStatus)
+	.delete(authentication.authenticateUser, cancelOrder)
 
 module.exports = router

@@ -118,11 +118,15 @@ const getMyOrders = async (req, res) => {
 		orders = await Order.find({
 			"user.userId": userId,
 			"status": statusFilter,
-		}).select('_id orderItems billing status')
+		},
+			{ 'orderItems': { $slice: 1 } })
+			.select('_id billing status')
 	} else {
 		orders = await Order.find({
 			"user.userId": userId,
-		}).select('_id orderItems billing status')
+		},
+			{ 'orderItems': { $slice: 1 } }
+		).select('_id billing status')
 	}
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)
@@ -155,6 +159,7 @@ const getOrderDetails = async (req, res) => {
 	res.status(StatusCodes.OK).json(order)
 }
 
+//admin only
 const updateOrderStatus = async (req, res) => {
 	const status = req.body.status
 	switch (status) {
@@ -253,10 +258,10 @@ const confirmOrder = async (req, res) => {
 	//todo: notify user
 	res.status(StatusCodes.OK).json({ order })
 }
-//admin only
 const cancelOrder = async (req, res) => {
 	//only cancel if the order status is pending, processing
 	const userId = req.user.userId
+	const role = req.user.rold
 	const orderId = req.params.order_id
 
 	const user = await User.findOne({
@@ -267,21 +272,40 @@ const cancelOrder = async (req, res) => {
 	const order = await Order.findOne({
 		_id: orderId,
 		"user.userId": userId,
-	})
+	}).lean()
 	if (!order) throw new CustomError.NotFoundError('Order does not exist')
-
+	let newOrder = null
 	if (constant.cancelableStatus.includes(order.status)) {
 		//only cancel if the status is pending or processing
-		order.status = 'CANCELED'
-		order.employee.userId = userId
-		order.employee.name = user.name
-		order.employee.phoneNumber = user.phoneNumber
-		await order.save()
+		if (role === 'admin') {
+			newOrder = await Order.findOneAndUpdate({
+				"user.userId": userId,
+				_id: orderId
+			}, {
+				$set: {
+					status: 'CANCELED',
+					"employee.userId": userId,
+					"employee.name": user.name,
+					"employee.phoneNumber": user.phoneNumber
+				}
+			}, { new: true, runValidators: true })
+		} else {
+			newOrder = await Order.findOneAndUpdate({
+				"user.userId": userId,
+				_id: orderId
+			}, {
+				$set: {
+					status: 'CANCELED'
+				}
+			}, { new: true, runValidators: true })
+		}
+
+		if (!newOrder) throw new CustomError.NotFoundError('Order does not exist')
 	} else {
-		throw new CustomError.BadRequestError('Can not update order status, the order has already been confirmed!')
+		throw new CustomError.BadRequestError(`Can not update order status, the order has already been ${order.status}!`)
 	}
 	//todo: notify user
-	res.status(StatusCodes.OK).json(order)
+	res.status(StatusCodes.OK).json(newOrder)
 }
 
 const getShippingFeeOptions = async (req, res) => {
@@ -360,4 +384,5 @@ module.exports = {
 	getAllOrders,
 	getOrderDetails,
 	updateOrderStatus,
+	cancelOrder,
 }

@@ -18,7 +18,6 @@ const createOrder = async (req, res) => {
 	const note = req.body.note
 	const shippingProvider = req.body.shippingProvider
 	const shippingServiceId = req.body.shippingServiceId
-	const shippingServiceTypeId = req.body.shippingServiceTypeId
 
 	//get userInfo
 	const user = await User.findOne({
@@ -39,6 +38,8 @@ const createOrder = async (req, res) => {
 		}
 	}).select('_id sku name category price imageUrl quantity weight').lean()
 	if (!products) throw new CustomError.InternalServerError('Error')
+	if (products.length == 0) throw new CustomError.NotFoundError('Order is empty or Can not find product')
+	console.log('products:', products)
 
 	//get address
 	const address = await Address.findOne({
@@ -62,7 +63,6 @@ const createOrder = async (req, res) => {
 		totalWeight += products[idx].weight * products[idx].quantity
 		totalProductCost += products[idx].price * products[idx].quantity
 	};
-	console.log('products:', products)
 	console.log('totalWeight:', totalWeight)
 	console.log('totalProductCost:', totalProductCost)
 
@@ -81,7 +81,7 @@ const createOrder = async (req, res) => {
 	console.log('shipping fee:', estimatedShippingFee)
 	const userOrder = createUserOrder(userId, user.name, user.phoneNumber)
 	const billing = createBilling(totalProductCost, estimatedShippingFee, paymentMethod)
-	const shippingDetails = createShippingDetails(totalWeight, shippingProvider, shippingServiceId, shippingServiceTypeId)
+	const shippingDetails = createShippingDetails(totalWeight, shippingProvider, shippingServiceId)
 
 	const order = await Order.create({
 		user: userOrder,
@@ -345,8 +345,8 @@ const createBilling = (totalProductCost, estimatedShippingFee, paymentMethod) =>
 		// paymentMethod: paymentMethod
 	}
 }
-const createShippingDetails = (totalWeight, shippingProvider, shippingServiceId, shippingServiceTypeId) => {
-	return { weight: totalWeight, shippingServiceId, shippingServiceTypeId }
+const createShippingDetails = (totalWeight, shippingProvider, shippingServiceId) => {
+	return { weight: totalWeight, shippingServiceId }
 }
 const createUserOrder = (userId, name, phoneNumber) => {
 	return { userId, name, phoneNumber }

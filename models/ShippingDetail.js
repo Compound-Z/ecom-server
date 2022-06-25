@@ -17,10 +17,6 @@ const ShippingDetailSchema = new mongoose.Schema({
 		type: Number,
 		required: true,
 	},
-	shippingServiceTypeId: {
-		type: Number,
-		required: true,
-	},
 	shippingOrderCode: {
 		type: String,
 	},

@@ -12,8 +12,6 @@ const CartItemSchema = new mongoose.Schema({
 		required: true
 	}
 })
-const CartItemModel = mongoose.model("CartItem", CartItemSchema)
 module.exports = {
-	CartItemModel,
 	CartItemSchema
 }

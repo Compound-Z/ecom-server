@@ -7,18 +7,22 @@ const { ShippingDetailSchema } = require('./ShippingDetail');
 const OrderSchema = new mongoose.Schema({
 	user: {
 		type: OrderUserSchema,
+		ref: 'OrderUser',
 		required: true
 	},
 	address: {
 		type: AddressItemSchema,
+		ref: 'AddressItem',
 		required: true
 	},
 	orderItems: {
 		type: [OrderItemSchema],
+		ref: 'OrderItem',
 		required: true
 	},
 	billing: {
 		type: BillingSchema,
+		ref: 'Billing',
 		required: true
 	},
 	status: {
@@ -42,8 +46,12 @@ const OrderSchema = new mongoose.Schema({
 	},
 	shippingDetails: {
 		type: ShippingDetailSchema,
+		ref: 'ShippingDetail',
 		required: true
 	},
-	employee: OrderUserSchema,
+	employee: {
+		type: OrderUserSchema,
+		ref: 'OrderUser'
+	},
 }, { timestamps: true })
 module.exports = mongoose.model("Order", OrderSchema);

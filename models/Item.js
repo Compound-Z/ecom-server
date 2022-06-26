@@ -36,8 +36,6 @@ const ItemSchema = new mongoose.Schema({
 		require: [true, 'Please provide product\'s weight'],
 	},
 })
-const ItemModel = mongoose.model("Item", ItemSchema)
 module.exports = {
-	ItemModel,
 	ItemSchema
 }

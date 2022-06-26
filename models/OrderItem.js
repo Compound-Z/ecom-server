@@ -36,8 +36,6 @@ const OrderItemSchema = new mongoose.Schema({
 		require: [true, 'Please provide product\'s weight'],
 	},
 })
-const OrderItemModel = mongoose.model("OrderItem", OrderItemSchema)
 module.exports = {
-	OrderItemModel,
 	OrderItemSchema
 }

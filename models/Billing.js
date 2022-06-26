@@ -25,8 +25,6 @@ const BillingSchema = new mongoose.Schema({
 		required: true
 	}
 })
-const BillingModel = mongoose.model("Billing", BillingSchema);
 module.exports = {
-	BillingSchema,
-	BillingModel
+	BillingSchema
 }

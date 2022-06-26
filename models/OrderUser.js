@@ -21,8 +21,6 @@ const OrderUserSchema = new mongoose.Schema({
 		},
 	},
 })
-const OrderUserModel = mongoose.model("OrderUser", OrderUserSchema);
 module.exports = {
 	OrderUserSchema,
-	OrderUserModel
 }

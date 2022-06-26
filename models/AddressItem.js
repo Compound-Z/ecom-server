@@ -25,7 +25,6 @@ const DistrictSchema = mongoose.Schema({
 		type: Number,
 		min: 0,
 		require: true,
-		ref: 'District',
 	},
 	name: {
 		type: String,
@@ -63,9 +62,15 @@ const AddressItemSchema = new mongoose.Schema({
 		// match: "^(0|\+84?)(3[2-9]|5[6|8|9]|7[0|6-9]|8[0-6|8|9]|9[0-4|6-9])[0-9]{7}$",
 		required: true
 	},
-	province: ProvinceSchema,
-	district: DistrictSchema,
-	ward: WardSchema,
+	province: {
+		type: ProvinceSchema,
+	},
+	district: {
+		type: DistrictSchema,
+	},
+	ward: {
+		type: WardSchema,
+	},
 	detailedAddress: {
 		type: String,
 		minlength: 5,
@@ -83,6 +88,4 @@ const AddressItemSchema = new mongoose.Schema({
 	}
 })
 
-
-const AddressItemModel = mongoose.model("AddressItem", AddressItemSchema)
-module.exports = { AddressItemModel, AddressItemSchema }
+module.exports = { AddressItemSchema }

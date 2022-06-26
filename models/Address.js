@@ -3,12 +3,12 @@ const { AddressItemSchema } = require('./AddressItem')
 const AddressSchema = new mongoose.Schema({
 	userId: {
 		type: mongoose.Schema.ObjectId,
-		ref: 'User',
 		required: true,
 	},
-	addresses: [
-		AddressItemSchema
-	],
+	addresses: {
+		type: [AddressItemSchema],
+		ref: 'AddressItem'
+	},
 	defaultAddressId: {
 		type: String,
 		minlength: 0,

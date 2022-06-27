@@ -5,9 +5,10 @@ const ghnAPI = require('../services/ghn/ghnAPI');
 const { findOneAndUpdate } = require('../models/Address');
 
 const getAllAddresses = async (req, res) => {
-	const addresses = await Address.findOne({
+	let addresses = await Address.findOne({
 		userId: req.user.userId
 	})
+	if (addresses == null) addresses = {}
 	res.status(StatusCodes.OK).json(addresses)
 }
 const createAddress = async (req, res) => {

@@ -59,6 +59,7 @@ const register = async (req, res) => {
 		});
 		/**after creating a brand new user, create a new cart and associate it with the just-created user */
 		const cart = await Cart.create({ userId: user._id })
+		const address = await Address.create({ userId: user._id })
 	} else {
 		user = existedUser
 	}

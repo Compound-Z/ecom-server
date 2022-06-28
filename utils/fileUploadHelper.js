@@ -1,8 +1,10 @@
 const cloudinary = require('cloudinary').v2
 const fs = require('fs')
 const { StatusCodes } = require('http-status-codes')
+const CustomError = require('../errors');
 
 const uploadFile = async (req, res, folderPath) => {
+	console.log('body:', req)
 	if (!req.files) {
 		throw new CustomError.BadRequestError('No File Uploaded');
 	}
@@ -24,7 +26,7 @@ const uploadFile = async (req, res, folderPath) => {
 	)
 	fs.unlinkSync(req.files.image.tempFilePath)
 
-	res.status(StatusCodes.CREATED).json({ image: { src: result.secure_url } })
+	res.status(StatusCodes.CREATED).json({ url: result.secure_url })
 }
 
 module.exports = uploadFile

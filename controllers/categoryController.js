@@ -49,7 +49,7 @@ const createCategory = async (req, res) => {
 
 //todo: change to multi file upload?
 const uploadImage = async (req, res) => {
-	uploadFile(req, res, 'ecom/category')
+	await uploadFile(req, res, 'ecom/category')
 }
 const updateCategory = async (req, res) => {
 	const categoryId = req.params.id

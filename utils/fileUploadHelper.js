@@ -2,6 +2,7 @@ const cloudinary = require('cloudinary').v2
 const fs = require('fs')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
+const { imgMaxSize } = require('../utils/constants')
 
 const uploadFile = async (req, res, folderPath) => {
 	console.log('body:', req)
@@ -12,9 +13,8 @@ const uploadFile = async (req, res, folderPath) => {
 	if (!categoryImage.mimetype.startsWith('image')) {
 		throw new CustomError.BadRequestError('Please Upload Image');
 	}
-	const maxSize = 1024 * 1024;
-	if (categoryImage.size > maxSize) {
-		throw new CustomError.BadRequestError('Please upload image smaller 1MB');
+	if (categoryImage.size > imgMaxSize) {
+		throw new CustomError.BadRequestError('Please upload image smaller 2MB');
 	}
 
 	const result = await cloudinary.uploader.upload(

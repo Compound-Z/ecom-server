@@ -22,5 +22,7 @@ shipping = {
 }
 processableStatus = ['PENDING']
 cancelableStatus = ['PENDING', 'PROCESSING']
+imgMaxSize = 2 * 1024 * 1024;
 
-module.exports = { brands, categories, shipping, cancelableStatus, processableStatus }
+
+module.exports = { brands, categories, shipping, cancelableStatus, processableStatus, imgMaxSize }

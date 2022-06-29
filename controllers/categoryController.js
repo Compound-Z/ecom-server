@@ -38,7 +38,8 @@ const createCategory = async (req, res) => {
 	console.log('body: ', req.body)
 	req.body.user = 'test_user_id'
 
-	const { name, imageUrl, numberOfProduct } = req.body
+	let { name, imageUrl, numberOfProduct } = req.body
+	name = name.trim().replace(/\s/g, '_')
 
 	const category = await Category.create({
 		name, imageUrl, numberOfProduct
@@ -48,6 +49,7 @@ const createCategory = async (req, res) => {
 }
 
 //todo: change to multi file upload?
+/**check if category is duplicate, if not, proceed the img uploading process*/
 const uploadImage = async (req, res) => {
 	await uploadFile(req, res, 'ecom/category')
 }

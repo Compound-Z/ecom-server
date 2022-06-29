@@ -34,6 +34,11 @@ const ProductSchema = new mongoose.Schema(
 			type: String,
 			required: [true, 'Please provide product category'],
 		},
+		stockNumber: {
+			type: Number,
+			required: true,
+			default: 0,
+		},
 		saleNumber: {
 			type: Number,
 			required: true,

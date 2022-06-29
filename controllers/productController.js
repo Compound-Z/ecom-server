@@ -2,7 +2,9 @@ const Product = require('../models/Product')
 const ProductDetail = require('../models/ProductDetail')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
-const uploadFile = require('../utils/fileUploadHelper')
+const uploadFile = require('../utils/fileUploadHelper');
+const Category = require('../models/Category');
+const { addUnderline } = require('../utils/stringHelper')
 
 
 const getAllProducts = async (req, res) => {
@@ -33,7 +35,11 @@ const createProduct = async (req, res) => {
 	if (!productReq || !productDetailReq) {
 		throw new CustomError.BadRequestError('productReq or productDetailReq is missing')
 	}
-
+	productReq.category = addUnderline(productReq.category)
+	/**check category */
+	const category = await Category.findOne({ name: productReq.category })
+	if (!category) throw new CustomError.BadRequestError('Category does not exist')
+	console.log('category', category)
 	/**First, create a product doc */
 	const product = await Product.create(productReq)
 	if (!product) {

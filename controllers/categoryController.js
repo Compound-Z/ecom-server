@@ -2,8 +2,9 @@ const Category = require('../models/Category')
 const Product = require('../models/Product')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
-const uploadFile = require('../utils/fileUploadHelper')
-
+const uploadFile = require('../utils/fileUploadHelper');
+const { createDocumentRegistry } = require('typescript');
+const { addUnderline } = require('../utils/stringHelper')
 
 const getAllCategories = async (req, res) => {
 	const categories = await Category.find({})
@@ -38,11 +39,11 @@ const createCategory = async (req, res) => {
 	console.log('body: ', req.body)
 	req.body.user = 'test_user_id'
 
-	let { name, imageUrl, numberOfProduct } = req.body
-	name = name.trim().replace(/\s/g, '_')
+	let { name, imageUrl } = req.body
+	name = addUnderline(name)
 
 	const category = await Category.create({
-		name, imageUrl, numberOfProduct
+		name, imageUrl
 	})
 
 	res.status(StatusCodes.CREATED).json(category)
@@ -55,17 +56,40 @@ const uploadImage = async (req, res) => {
 }
 const updateCategory = async (req, res) => {
 	const categoryId = req.params.id
-	const { name, imageUrl, numberOfProduct } = req.body
-	const category = await Category.findOneAndUpdate(
+	let { name, imageUrl, numberOfProduct } = req.body
+	name = addUnderline(name)
+	let category = await Category.findOneAndUpdate(
 		{ _id: categoryId },
 		{ name, imageUrl, numberOfProduct },
-		{ new: true, runValidators: true })
-
+		{ new: false, runValidators: true })
 	if (!category) {
 		throw new CustomError.NotFoundError(`This category with id ${categoryId} does not exist`)
 	}
 
-	res.status(StatusCodes.OK).json(category)
+	const updateValue = await Product.updateMany(
+		{ "category": category.name },
+		{ "category": name }
+	)
+	if (!updateValue) {
+		//revert updating category
+		const revertedCategory = await Category.findOneAndUpdate(
+			{ _id: categoryId },
+			{
+				"name": category.name,
+				"imageUrl": category.imageUrl,
+				"numberOfProduct": category.numberOfProduct
+			},
+			{ new: true, runValidators: true })
+		throw new CustomError.InternalServerError('Failed to update category! Try again later')
+	}
+
+	res.status(StatusCodes.OK).json(
+		{
+			"message": "Update category successfully",
+			"modifiedCount": updateValue.modifiedCount,
+			"acknowledged": updateValue.acknowledged
+		}
+	)
 }
 const deleteCategory = async (req, res) => {
 	const categoryId = req.params.id
@@ -74,9 +98,15 @@ const deleteCategory = async (req, res) => {
 	if (!category) {
 		throw new CustomError.NotFoundError(`This category with id ${categoryId} does not exist`)
 	}
-
-	await category.remove()
-	res.status(StatusCodes.OK).json({ msg: "remove category successfully" })
+	/**check if there is product that belongs to this category*/
+	const products = await Product.find({ "category": category.name })
+	console.log('products', products, products.length)
+	if (products.length > 0) {
+		throw new CustomError.BadRequestError(`Can not delete this category, there are ${products.length} products belong to this category. Update those products first, then try deleting the category later.`)
+	} else {
+		await category.remove()
+		res.status(StatusCodes.OK).json({ message: "remove category successfully" })
+	}
 }
 
 module.exports = {

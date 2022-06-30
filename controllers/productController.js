@@ -5,7 +5,8 @@ const CustomError = require('../errors');
 const uploadFile = require('../utils/fileUploadHelper');
 const Category = require('../models/Category');
 const { addUnderline } = require('../utils/stringHelper')
-
+const CountrySchema = require('../models/Country');
+const { default: mongoose } = require('mongoose');
 
 const getAllProducts = async (req, res) => {
 	const products = await Product.find({}).select('-user -createdAt -updatedAt -__v -id')
@@ -136,7 +137,12 @@ const searchProducts = async (req, res) => {
 	if (!products) throw new CustomError.NotFoundError('Not found')
 	res.status(StatusCodes.OK).json(products)
 }
-
+const getOrigins = async (req, res) => {
+	const Country = mongoose.model('Country', CountrySchema)
+	const countries = await Country.find()
+	if (!countries) throw CustomError.NotFoundError('Not found countries')
+	res.status(StatusCodes.OK).json(countries)
+}
 module.exports = {
 	getAllProducts,
 	getProductDetails,
@@ -144,5 +150,6 @@ module.exports = {
 	uploadImage,
 	updateProduct,
 	deleteProduct,
-	searchProducts
+	searchProducts,
+	getOrigins
 }

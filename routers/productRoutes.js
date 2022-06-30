@@ -5,7 +5,8 @@ const {
 	uploadImage,
 	updateProduct,
 	deleteProduct,
-	searchProducts
+	searchProducts,
+	getOrigins
 } = require('../controllers/productController')
 
 // const { getAllReviewsOfAProduct } = require('../controllers/reviewCotroller')
@@ -22,6 +23,9 @@ router.route('/uploadImage')
 
 router.route('/search/').get(getAllProducts)
 router.route('/search/:search_words').get(searchProducts)
+
+router.route('/origins')
+	.get(authentication.authenticateUser, getOrigins)
 
 router.route('/:id')
 	.get(getProductDetails)

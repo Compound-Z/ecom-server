@@ -22,7 +22,8 @@ const connectDB = require('./db/connect')
 //middleware
 const notFound = require('./middleware/not-found')
 const errorHandlerMiddleware = require('./middleware/error-handler')
-
+//helper
+const { bootstrap } = require('./db/bootstrap_data')
 //routes
 const authRouter = require('./routers/authRoutes');
 const routerProduct = require('./routers/productRoutes')
@@ -57,7 +58,9 @@ const port = process.env.PORT || 5000
 const start = async () => {
 	try {
 		await connectDB(process.env.MONGO_URI)
-
+		console.log('Bootstraping data')
+		await bootstrap()
+		console.log('Bootstraping data finished')
 
 		app.listen(port, () => {
 			console.log(`Server is running at ${port}...`);

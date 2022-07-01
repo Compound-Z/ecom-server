@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Review = require('./Review') //todo: this should be removed when the app is done
-const constant = require('../utils/constants')
+const constant = require('../utils/constants');
+const { Category, CategorySchema } = require('./Category');
 
 const ProductSchema = new mongoose.Schema(
 	{
@@ -69,12 +70,29 @@ ProductSchema.virtual('reviews', {
 });
 
 ProductSchema.pre('remove', async function (next) {
-	try {
-		await this.model('Review').deleteMany({ product: this._id })
-	} catch (error) {
-		console.log('error: ', error)
-	}
+	await this.model('Review').deleteMany({ product: this._id })
 })
+
+ProductSchema.post('save', async function (next) {
+	const products = await this.model("Product").find({ category: this.category })
+
+	const category = await this.model("Category").findOneAndUpdate({
+		name: this.category
+	}, {
+		numberOfProduct: products.length
+	})
+})
+
+ProductSchema.post('remove', async function (next) {
+	const products = await this.model("Product").find({ category: this.category })
+
+	const category = await this.model("Category").findOneAndUpdate({
+		name: this.category
+	}, {
+		numberOfProduct: products.length
+	})
+})
+
 
 
 module.exports = mongoose.model('Product', ProductSchema)

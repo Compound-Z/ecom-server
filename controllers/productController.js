@@ -53,10 +53,6 @@ const createProduct = async (req, res) => {
 		throw new CustomError.ThirdPartyServiceError('Can not create ProductDetail')
 	}
 
-	/**increate category's product number */
-	category.numberOfProduct = category.numberOfProduct + 1
-	await category.save()
-
 	res.status(StatusCodes.CREATED).json(product)
 }
 
@@ -67,6 +63,17 @@ const uploadImage = async (req, res) => {
 const updateProduct = async (req, res) => {
 	const productId = req.params.id
 	const { product: productReq, productDetail: productDetailReq } = req.body
+	if (productReq) {
+		if (productReq.category) {
+			productReq.category = addUnderline(productReq.category)
+		}
+	}
+	const oldProduct = await Product.findOne({ _id: productId })
+	if (!oldProduct) {
+		throw new CustomError.NotFoundError(`This product with id ${productId} does not exist`)
+	}
+	const oldCate = oldProduct.category
+
 	const product = await Product.findOneAndUpdate(
 		{ _id: productId },
 		productReq,
@@ -74,6 +81,16 @@ const updateProduct = async (req, res) => {
 
 	if (!product) {
 		throw new CustomError.NotFoundError(`This product with id ${productId} does not exist`)
+	}
+
+	if (!(product.category === oldCate)) {
+		/**update cate */
+		/**increase numberOfProduct */
+		const productsOls = await Product.find({ category: oldCate })
+		const oldCateUpdate = await Category.findOneAndUpdate({ name: oldCate }, { numberOfProduct: productsOls.length }, { new: true, runValidators: true })
+		/**decrease numberOfProduct until 0*/
+		const productsNew = await Product.find({ category: product.category })
+		const newCateUpdate = await Category.findOneAndUpdate({ name: product.category }, { numberOfProduct: productsNew.length }, { new: true, runValidators: true })
 	}
 
 	const productDetail = await ProductDetail.findOneAndUpdate(
@@ -84,33 +101,21 @@ const updateProduct = async (req, res) => {
 	if (!productDetail) {
 		throw new CustomError.NotFoundError(`This productDetail with id ${product.productDetailId} does not exist`)
 	}
+
 	res.status(StatusCodes.OK).json(product)
 }
 const deleteProduct = async (req, res) => {
 	const productId = req.params.id
 
-	const product = await Product.findOneAndDelete({ _id: productId })
+	const product = await Product.findOne({ _id: productId })
 	if (!product) {
 		throw new CustomError.NotFoundError(`This product with id ${productId} does not exist`)
 	}
+	await product.remove()
 
 	const productDetail = await ProductDetail.findOneAndDelete({ productId: productId })
 	if (!productDetail) {
 		throw new CustomError.NotFoundError(`This productDetail does not exist`)
-	}
-
-	const category = await Category.findOneAndUpdate(
-		{
-			name: product.category,
-			numberOfProduct: { $gte: 1 }
-		}, {
-		$inc: {
-			numberOfProduct: -1
-		}
-	}
-	)
-	if (!category) {
-		throw new CustomError.InternalServerError(`System error, update category failed!`)
 	}
 
 	res.status(StatusCodes.OK).json({ message: "remove product successfully" })

@@ -5,6 +5,11 @@ const { OrderUserSchema } = require('./OrderUser');
 const { BillingSchema } = require('./Billing');
 const { ShippingDetailSchema } = require('./ShippingDetail');
 const OrderSchema = new mongoose.Schema({
+	orderId: {
+		type: String,
+		unique: true,
+		require: true,
+	},
 	user: {
 		type: OrderUserSchema,
 		ref: 'OrderUser',

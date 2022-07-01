@@ -15,7 +15,7 @@ const authentication = require('../middleware/authentication')
 
 
 router.route('/')
-	.get(authentication.authenticateUser, authentication.authorizePermissions('admin'), getAllOrders)
+	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), getAllOrders)
 	.post(authentication.authenticateUser, createOrder)
 // 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createProduct)
 router.route('/my-orders')

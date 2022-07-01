@@ -7,10 +7,16 @@ const { Address } = require('../models/Address');
 const ghnAPI = require('../services/ghn/ghnAPI');
 const constant = require('../utils/constants')
 const { deleteManyProductsInCart } = require('./cartController')
+const randomstring = require('randomstring')
 const createOrder = async (req, res) => {
 	console.log('body: ', req.body)
 	req.body.user = 'test_user_id'
 
+	/**create orderId */
+	const today = new Date().toJSON().slice(0, 10).replace(/-/g, '');
+	const orderId = today + randomstring.generate(5)
+
+	/**order paramaters */
 	const userId = req.user.userId
 	const orderItems = req.body.orderItems
 	const paymentMethod = req.body.paymentMethod
@@ -84,6 +90,7 @@ const createOrder = async (req, res) => {
 	const shippingDetails = createShippingDetails(totalWeight, shippingProvider, shippingServiceId)
 
 	const order = await Order.create({
+		orderId: orderId,
 		user: userOrder,
 		address: address.addresses[0],
 		orderItems: products,
@@ -120,13 +127,13 @@ const getMyOrders = async (req, res) => {
 			"status": statusFilter,
 		},
 			{ 'orderItems': { $slice: 1 } })
-			.select('_id billing status')
+			.select('_id orderId billing status')
 	} else {
 		orders = await Order.find({
 			"user.userId": userId,
 		},
 			{ 'orderItems': { $slice: 1 } }
-		).select('_id billing status')
+		).select('_id orderId billing status')
 	}
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)
@@ -139,9 +146,9 @@ const getAllOrders = async (req, res) => {
 	if (statusFilter) {
 		orders = await Order.find({
 			"status": statusFilter,
-		}).select('_id orderItems billing status')
+		}).select('_id orderId user orderItems billing status')
 	} else {
-		orders = await Order.find({}).select('_id orderItems billing status')
+		orders = await Order.find({}).select('_id orderId user orderItems billing status')
 	}
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)

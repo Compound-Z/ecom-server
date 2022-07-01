@@ -53,6 +53,10 @@ const createProduct = async (req, res) => {
 		throw new CustomError.ThirdPartyServiceError('Can not create ProductDetail')
 	}
 
+	/**increate category's product number */
+	category.numberOfProduct = category.numberOfProduct + 1
+	await category.save()
+
 	res.status(StatusCodes.CREATED).json(product)
 }
 
@@ -95,7 +99,21 @@ const deleteProduct = async (req, res) => {
 		throw new CustomError.NotFoundError(`This productDetail does not exist`)
 	}
 
-	res.status(StatusCodes.OK).json({ msg: "remove product successfully" })
+	const category = await Category.findOneAndUpdate(
+		{
+			name: product.category,
+			numberOfProduct: { $gte: 1 }
+		}, {
+		$inc: {
+			numberOfProduct: -1
+		}
+	}
+	)
+	if (!category) {
+		throw new CustomError.InternalServerError(`System error, update category failed!`)
+	}
+
+	res.status(StatusCodes.OK).json({ message: "remove product successfully" })
 }
 
 const searchProducts = async (req, res) => {

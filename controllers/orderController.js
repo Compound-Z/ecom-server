@@ -9,6 +9,7 @@ const constant = require('../utils/constants')
 const { deleteManyProductsInCart } = require('./cartController')
 const randomstring = require('randomstring')
 const createOrder = async (req, res) => {
+	console.log("createOrder")
 	console.log('body: ', req.body)
 	req.body.user = 'test_user_id'
 
@@ -115,9 +116,11 @@ const createOrder = async (req, res) => {
 	// 	createPaymentOrder(paymentMethod, products)
 	// 	//handle: resturn and exception
 	// }
+	console.log("order", order)
 	res.status(StatusCodes.CREATED).json(order)
 }
 const getMyOrders = async (req, res) => {
+	console.log("getMyOrders")
 	const userId = req.user.userId
 	const statusFilter = req.body.statusFilter
 	let orders
@@ -127,13 +130,13 @@ const getMyOrders = async (req, res) => {
 			"status": statusFilter,
 		},
 			{ 'orderItems': { $slice: 1 } })
-			.select('_id orderId billing status')
+			.select('_id orderId billing status updatedAt')
 	} else {
 		orders = await Order.find({
 			"user.userId": userId,
 		},
 			{ 'orderItems': { $slice: 1 } }
-		).select('_id orderId billing status')
+		).select('_id orderId billing status updatedAt')
 	}
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)
@@ -146,15 +149,16 @@ const getAllOrders = async (req, res) => {
 	if (statusFilter) {
 		orders = await Order.find({
 			"status": statusFilter,
-		}).select('_id orderId user orderItems billing status')
+		}).select('_id orderId user orderItems billing status updatedAt')
 	} else {
-		orders = await Order.find({}).select('_id orderId user orderItems billing status')
+		orders = await Order.find({}).select('_id orderId user orderItems billing status updatedAt')
 	}
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)
 }
 
 const getOrderDetails = async (req, res) => {
+	console.log("getOrderDetails")
 	const userId = req.user.userId
 	const orderId = req.params.order_id
 	const order = await Order.findOne({
@@ -168,6 +172,7 @@ const getOrderDetails = async (req, res) => {
 
 //admin only
 const updateOrderStatus = async (req, res) => {
+	console.log("updateOrderStatus")
 	const status = req.body.status
 	switch (status) {
 		case 'CONFIRMED':
@@ -188,13 +193,15 @@ const updateOrderStatus = async (req, res) => {
 const startProcessingOrder = async (req, res) => {
 	const orderId = req.params.order_id
 	const userId = req.user.userId
+
 	const user = await User.findOne({
 		_id: userId
 	})
 	if (!user) throw CustomError.NotFoundError('User does not exist')
-	console.log('user', user)
+
 	const order = await Order.findOneAndUpdate({
 		_id: orderId,
+		"user.userId": userId,
 		status: {
 			$in: constant.processableStatus
 		}
@@ -210,7 +217,7 @@ const startProcessingOrder = async (req, res) => {
 		console.log('order', order)
 		throw new CustomError.NotFoundError('Order does not exist or you can not update order status to PROCESSING')
 	}
-
+	console.log('startProcessingOrder:', order)
 	//todo: notify user/or can do caching to compare old data vs new data, so that the app can show red noti
 
 	res.status(StatusCodes.OK).json(order)
@@ -250,7 +257,7 @@ const confirmOrder = async (req, res) => {
 			//if failed creating shipping order, revert confirming order.
 			order.status = 'PROCESSING'
 			await order.save()
-			throw new CustomError.InternalServerError(`Can not create shipping order: ${shippingOrder.message}`)
+			throw new CustomError.InternalServerError(`Giaohangnhanh: ${shippingOrder.message}`)
 		}
 		//todo: store shipping information
 		order.shippingDetails.shippingOrderCode = shippingOrder.order_code
@@ -261,10 +268,12 @@ const confirmOrder = async (req, res) => {
 		order.shippingDetails.expectedDeliveryTime = shippingOrder.expected_delivery_time
 		await order.save()
 	}
-
+	console.log("confirmed order successfully", order)
 	//todo: notify user
-	res.status(StatusCodes.OK).json({ order })
+	res.status(StatusCodes.OK).json(order)
 }
+
+/**only customer can cancel their order, admin should not be able to*/
 const cancelOrder = async (req, res) => {
 	//only cancel if the order status is pending, processing
 	const userId = req.user.userId
@@ -313,6 +322,57 @@ const cancelOrder = async (req, res) => {
 	}
 	//todo: notify user
 	res.status(StatusCodes.OK).json(newOrder)
+}
+
+
+const searchOrdersByOrderId = async (req, res) => {
+
+	const statusFilter = req.body.statusFilter
+	const orderId = req.body.orderId
+
+	const orders = await Order.aggregate(
+		[{
+			$search: {
+				index: "orderIdx",
+				autocomplete: {
+					query: orderId,
+					path: 'orderId'
+				}
+			}
+		},
+		{
+			$match: { status: statusFilter }
+		}
+		]
+	)
+
+	if (!orders) throw new CustomError.NotFoundError('Not found orders')
+	res.status(StatusCodes.OK).json(orders)
+}
+
+const searchOrdersByUserName = async (req, res) => {
+
+	const statusFilter = req.body.statusFilter
+	const userName = req.user.name
+
+	const orders = await Order.aggregate(
+		[{
+			$search: {
+				index: "nameIdx",
+				autocomplete: {
+					query: userName,
+					path: 'user.name'
+				}
+			}
+		},
+		{
+			$match: { status: statusFilter }
+		}
+		]
+	)
+
+	if (!orders) throw new CustomError.NotFoundError('Not found orders')
+	res.status(StatusCodes.OK).json(orders)
 }
 
 const getShippingFeeOptions = async (req, res) => {
@@ -392,4 +452,7 @@ module.exports = {
 	getOrderDetails,
 	updateOrderStatus,
 	cancelOrder,
+	searchOrdersByOrderId,
+	searchOrdersByUserName,
+	searchOrdersByProduct
 }

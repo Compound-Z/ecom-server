@@ -157,6 +157,59 @@ const getAllOrders = async (req, res) => {
 	res.status(StatusCodes.OK).json(orders)
 }
 
+const getOrdersBaseOnTime = async (req, res) => {
+	const numberOfDays = req.body.numberOfDays
+
+	if (numberOfDays) {
+		await getOrdersBaseOnNumberOfDays(req, res)
+	} else {
+		await getOrdersBaseOnTimeSpan(req, res)
+	}
+
+
+}
+
+const getOrdersBaseOnNumberOfDays = async (req, res) => {
+	console.log('getOrdersBaseOnNumberOfDays')
+	const numberOfDays = req.body.numberOfDays
+	if (!numberOfDays) throw new CustomError.BadRequestError('Please provide number of days')
+	if (numberOfDays > 60) throw new CustomError.BadRequestError('Number of days is too big, try using time span instead')
+	const orders = await Order.find(
+		{
+			createdAt: {
+				$gte: Date.now() - numberOfDays * 3600 * 1000 /** for now i test in hours. should change back to days:: constant.oneDayInMiliceconds*/
+			}
+		},
+		'orderItems billing status createdAt'
+	)
+	console.log('orders', orders)
+	res.status(StatusCodes.OK).json(orders)
+}
+
+const getOrdersBaseOnTimeSpan = async (req, res) => {
+	console.log('getOrdersBaseOnTimeSpan')
+	const timeSpanStart = req.body.timeSpanStart
+	const timeSpanEnd = req.body.timeSpanEnd
+
+	if (!timeSpanStart || !timeSpanEnd) throw new CustomError.BadRequestError('Please provide time span')
+	if (numberOfDays > 60) throw new CustomError('Number of days is too big, try using time span instead')
+
+	const startTimeStamp = Date.parse(timeSpanStart)
+	const endTimeStamp = Date.parse(timeSpanEnd)
+
+	const orders = await Order.find(
+		{
+			createdAt: {
+				$gte: startTimeStamp,
+				$lte: endTimeStamp
+			}
+		},
+		'orderItems billing status createdAt'
+	)
+	console.log('orders', orders)
+	res.status(StatusCodes.OK).json(orders)
+}
+
 const getOrderDetails = async (req, res) => {
 	console.log("getOrderDetails")
 	const userId = req.user.userId
@@ -183,6 +236,9 @@ const updateOrderStatus = async (req, res) => {
 			break;
 		case 'CANCELED':
 			await cancelOrder(req, res)
+			break;
+		case 'RECEIVED':
+			await receiveOrder(req, res)
 			break;
 		default:
 			throw new CustomError.BadRequestError('Status undefined!')
@@ -231,6 +287,8 @@ const confirmOrder = async (req, res) => {
 	const userId = req.user.userId
 	const orderId = req.params.order_id
 
+	console.log('confirming order')
+
 	const user = await User.findOne({
 		_id: userId
 	})
@@ -271,6 +329,19 @@ const confirmOrder = async (req, res) => {
 	console.log("confirmed order successfully", order)
 	//todo: notify user
 	res.status(StatusCodes.OK).json(order)
+
+	/**update sold number and stock nunmber of product */
+	for (const item of order.orderItems) {
+		const product = await Product.findOneAndUpdate({
+			_id: item.productId
+		}, {
+			$inc: {
+				saleNumber: item.quantity,
+				stockNumber: -item.quantity
+			},
+		})
+		console.log('product', product)
+	};
 }
 
 /**only customer can cancel their order, admin should not be able to*/
@@ -324,27 +395,82 @@ const cancelOrder = async (req, res) => {
 	res.status(StatusCodes.OK).json(newOrder)
 }
 
+/**only customer can receive their order, admin should not be able to*/
+const receiveOrder = async (req, res) => {
+	//only receive if the order status is confirmed
+	const userId = req.user.userId
+	const orderId = req.params.order_id
+
+	const user = await User.findOne({
+		_id: userId
+	})
+	if (!user) throw CustomError.NotFoundError('User does not exist')
+
+	const order = await Order.findOne({
+		_id: orderId,
+		"user.userId": userId,
+	}).lean()
+	if (!order) throw new CustomError.NotFoundError('Order does not exist')
+
+	let newOrder = null
+	if (constant.receivableStatus.includes(order.status)) {
+		//only receive if the status is confirmed
+		newOrder = await Order.findOneAndUpdate({
+			"user.userId": userId,
+			_id: orderId
+		}, {
+			$set: {
+				status: 'RECEIVED'
+			}
+		}, { new: true, runValidators: true })
+
+		if (!newOrder) throw new CustomError.NotFoundError('Order does not exist')
+	} else {
+		throw new CustomError.BadRequestError(`Can not mark this order as RECEIVED, the order status is ${order.status}! \n You can only receive an order after it has been confirmed!`)
+	}
+	//todo: notify user
+	res.status(StatusCodes.OK).json(newOrder)
+}
+
 
 const searchOrdersByOrderId = async (req, res) => {
 
 	const statusFilter = req.body.statusFilter
 	const orderId = req.body.orderId
 
-	const orders = await Order.aggregate(
-		[{
-			$search: {
-				index: "orderIdx",
-				autocomplete: {
-					query: orderId,
-					path: 'orderId'
+	if (!orderId) getAllOrders(req, res)
+
+	let orders = null
+	if (!statusFilter) {
+		orders = await Order.aggregate(
+			[{
+				$search: {
+					index: "orderIdx",
+					autocomplete: {
+						query: orderId,
+						path: 'orderId'
+					}
 				}
 			}
-		},
-		{
-			$match: { status: statusFilter }
-		}
-		]
-	)
+			]
+		)
+	} else {
+		orders = await Order.aggregate(
+			[{
+				$search: {
+					index: "orderIdx",
+					autocomplete: {
+						query: orderId,
+						path: 'orderId'
+					}
+				}
+			},
+			{
+				$match: { status: statusFilter }
+			}
+			]
+		)
+	}
 
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)
@@ -353,23 +479,42 @@ const searchOrdersByOrderId = async (req, res) => {
 const searchOrdersByUserName = async (req, res) => {
 
 	const statusFilter = req.body.statusFilter
-	const userName = req.user.name
+	const userName = req.body.userName
+	if (!userName) getAllOrders(req, res)
 
-	const orders = await Order.aggregate(
-		[{
-			$search: {
-				index: "nameIdx",
-				autocomplete: {
-					query: userName,
-					path: 'user.name'
+	let orders = null
+	if (!statusFilter) {
+		orders = await Order.aggregate(
+			[{
+				$search: {
+					index: "nameIdx",
+					autocomplete: {
+						query: userName,
+						path: 'user.name'
+					}
 				}
 			}
-		},
-		{
-			$match: { status: statusFilter }
-		}
-		]
-	)
+			]
+		)
+	} else {
+		orders = await Order.aggregate(
+			[{
+				$search: {
+					index: "nameIdx",
+					autocomplete: {
+						query: userName,
+						path: 'user.name'
+					}
+				}
+			},
+			{
+				$match: { status: statusFilter }
+			}
+			]
+		)
+	}
+
+
 
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)
@@ -454,5 +599,5 @@ module.exports = {
 	cancelOrder,
 	searchOrdersByOrderId,
 	searchOrdersByUserName,
-	searchOrdersByProduct
+	getOrdersBaseOnTime,
 }

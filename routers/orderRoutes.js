@@ -8,7 +8,7 @@ const {
 	cancelOrder,
 	searchOrdersByOrderId,
 	searchOrdersByUserName,
-	searchOrdersByProduct
+	getOrdersBaseOnTime,
 } = require('../controllers/orderController')
 
 // const { getAllReviewsOfAProduct } = require('../controllers/reviewCotroller')
@@ -30,8 +30,8 @@ router.route('/search_by_order_id')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), searchOrdersByOrderId)
 router.route('/search_by_user_name')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), searchOrdersByUserName)
-router.route('/search_by_product')
-	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), searchOrdersByProduct)
+router.route('/dashboard')
+	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), getOrdersBaseOnTime)
 // router.route('/update-status')
 // 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateProduct)
 // 	.delete(authentication.authenticateUser, authentication.authorizePermissions('admin'), deleteProduct)

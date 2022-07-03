@@ -22,7 +22,8 @@ shipping = {
 }
 processableStatus = ['PENDING']
 cancelableStatus = ['PENDING', 'PROCESSING']
+receivableStatus = ['CONFIRMED']
 imgMaxSize = 2 * 1024 * 1024;
+oneDayInMiliceconds = 24 * 3600 * 1000
 
-
-module.exports = { brands, categories, shipping, cancelableStatus, processableStatus, imgMaxSize }
+module.exports = { brands, categories, shipping, cancelableStatus, processableStatus, receivableStatus, imgMaxSize, oneDayInMiliceconds }

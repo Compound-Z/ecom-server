@@ -145,15 +145,23 @@ const getMyOrders = async (req, res) => {
 //admin only
 const getAllOrders = async (req, res) => {
 	const statusFilter = req.body.statusFilter
-	let orders
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 5
+	let orders = null
+	const options = {
+		page: page,
+		limit: pageSize,
+		select: '_id orderId user orderItems billing status updatedAt'
+	}
 	if (statusFilter) {
-		orders = await Order.find({
+		orders = await Order.paginate({
 			"status": statusFilter,
-		}).select('_id orderId user orderItems billing status updatedAt')
+		}, options)
 	} else {
-		orders = await Order.find({}).select('_id orderId user orderItems billing status updatedAt')
+		orders = await Order.paginate({}, options)
 	}
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
+	console.log('order', orders.page, orders.docs.length)
 	res.status(StatusCodes.OK).json(orders)
 }
 
@@ -177,7 +185,7 @@ const getOrdersBaseOnNumberOfDays = async (req, res) => {
 	const orders = await Order.find(
 		{
 			createdAt: {
-				$gte: Date.now() - numberOfDays * 3600 * 1000 /** for now i test in hours. should change back to days:: constant.oneDayInMiliceconds*/
+				$gte: Date.now() - numberOfDays * constant.oneDayInMiliceconds/** for now i test in hours. should change back to days:: constant.oneDayInMiliceconds*/
 			}
 		},
 		'orderItems billing status createdAt'

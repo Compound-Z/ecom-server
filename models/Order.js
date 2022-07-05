@@ -4,6 +4,8 @@ const { AddressItemSchema } = require('./AddressItem');
 const { OrderUserSchema } = require('./OrderUser');
 const { BillingSchema } = require('./Billing');
 const { ShippingDetailSchema } = require('./ShippingDetail');
+const mongoosePaginate = require('mongoose-paginate-v2');
+
 const OrderSchema = new mongoose.Schema({
 	orderId: {
 		type: String,
@@ -59,4 +61,5 @@ const OrderSchema = new mongoose.Schema({
 		ref: 'OrderUser'
 	},
 }, { timestamps: true })
+OrderSchema.plugin(mongoosePaginate)
 module.exports = mongoose.model("Order", OrderSchema);

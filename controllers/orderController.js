@@ -146,12 +146,21 @@ const getMyOrders = async (req, res) => {
 const getAllOrders = async (req, res) => {
 	const statusFilter = req.body.statusFilter
 	const page = req.body.page || 1
-	const pageSize = req.body.pageSize || 5
+	const pageSize = req.body.pageSize || 10
+
+
+	// const testPage = await Order.paginate({}, { page: 1, litmit: pageSize })
+	// const totalPages = testPage.totalPages
+	// const revertedPage = totalPages - page + 1
+	// console.log('revertedPage', revertedPage, testPage)
 	let orders = null
 	const options = {
+		sort: {
+			updatedAt: -1
+		},
 		page: page,
 		limit: pageSize,
-		select: '_id orderId user orderItems billing status updatedAt'
+		select: '_id orderId user orderItems billing status updatedAt',
 	}
 	if (statusFilter) {
 		orders = await Order.paginate({
@@ -161,7 +170,7 @@ const getAllOrders = async (req, res) => {
 		orders = await Order.paginate({}, options)
 	}
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
-	console.log('order', orders.page, orders.docs.length)
+	// console.log('order', orders)
 	res.status(StatusCodes.OK).json(orders)
 }
 
@@ -173,7 +182,6 @@ const getOrdersBaseOnTime = async (req, res) => {
 	} else {
 		await getOrdersBaseOnTimeSpan(req, res)
 	}
-
 
 }
 
@@ -479,8 +487,9 @@ const searchOrdersByOrderId = async (req, res) => {
 			]
 		)
 	}
-
+	console.log('order', orders)
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
+
 	res.status(StatusCodes.OK).json(orders)
 }
 

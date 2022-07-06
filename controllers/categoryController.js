@@ -12,7 +12,20 @@ const getAllCategories = async (req, res) => {
 }
 const getAllProductOfACategory = async (req, res) => {
 	const categoryName = req.params.name
-	const products = await Product.find({ category: categoryName })
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
+	const products = await Product.paginate(
+		{ category: categoryName },
+		options
+	)
 	res.status(StatusCodes.OK).json(products)
 }
 const searchProductsInCategory = async (req, res) => {

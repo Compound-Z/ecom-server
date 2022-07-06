@@ -9,7 +9,21 @@ const CountrySchema = require('../models/Country');
 const { default: mongoose } = require('mongoose');
 
 const getAllProducts = async (req, res) => {
-	const products = await Product.find({}).select('-user -createdAt -updatedAt -__v -id')
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
+	const products = await Product.paginate(
+		{},
+		options
+	)
+
 	if (!products) throw new CustomError.NotFoundError('Not found')
 	res.status(StatusCodes.OK).json(products)
 }

@@ -14,9 +14,9 @@ const express = require('express')
 const router = express.Router()
 const authentication = require('../middleware/authentication')
 
-
+router.route('/all')
+	.post(authentication.authenticateUser, getAllProducts)
 router.route('/')
-	.get(getAllProducts)
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createProduct)
 router.route('/uploadImage')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)

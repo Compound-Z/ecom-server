@@ -8,6 +8,7 @@ const ghnAPI = require('../services/ghn/ghnAPI');
 const constant = require('../utils/constants')
 const { deleteManyProductsInCart } = require('./cartController')
 const randomstring = require('randomstring')
+
 const createOrder = async (req, res) => {
 	console.log("createOrder")
 	console.log('body: ', req.body)
@@ -453,39 +454,41 @@ const searchOrdersByOrderId = async (req, res) => {
 
 	const statusFilter = req.body.statusFilter
 	const orderId = req.body.orderId
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
 
 	if (!orderId) getAllOrders(req, res)
 
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '_id orderId user orderItems billing status updatedAt',
+	}
+
 	let orders = null
 	if (!statusFilter) {
-		orders = await Order.aggregate(
-			[{
-				$search: {
-					index: "orderIdx",
-					autocomplete: {
-						query: orderId,
-						path: 'orderId'
-					}
-				}
+		const aggregate = Order.aggregate()
+		aggregate.search({
+			index: "orderIdx",
+			autocomplete: {
+				query: orderId,
+				path: 'orderId'
 			}
-			]
-		)
+		})
+		orders = await Order.aggregatePaginate(aggregate, options)
 	} else {
-		orders = await Order.aggregate(
-			[{
-				$search: {
-					index: "orderIdx",
-					autocomplete: {
-						query: orderId,
-						path: 'orderId'
-					}
-				}
-			},
-			{
-				$match: { status: statusFilter }
+		const aggregate = Order.aggregate()
+		aggregate.search({
+			index: "orderIdx",
+			autocomplete: {
+				query: orderId,
+				path: 'orderId'
 			}
-			]
-		)
+		}).match({ status: statusFilter })
+		orders = await Order.aggregatePaginate(aggregate, options)
 	}
 	console.log('order', orders)
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
@@ -497,43 +500,44 @@ const searchOrdersByUserName = async (req, res) => {
 
 	const statusFilter = req.body.statusFilter
 	const userName = req.body.userName
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+
 	if (!userName) getAllOrders(req, res)
 
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '_id orderId user orderItems billing status updatedAt',
+	}
 	let orders = null
 	if (!statusFilter) {
-		orders = await Order.aggregate(
-			[{
-				$search: {
-					index: "nameIdx",
-					autocomplete: {
-						query: userName,
-						path: 'user.name'
-					}
-				}
+		const aggregate = Order.aggregate()
+		aggregate.search({
+			index: "nameIdx",
+			autocomplete: {
+				query: userName,
+				path: 'user.name'
 			}
-			]
-		)
+		})
+		orders = await Order.aggregatePaginate(aggregate, options)
 	} else {
-		orders = await Order.aggregate(
-			[{
-				$search: {
-					index: "nameIdx",
-					autocomplete: {
-						query: userName,
-						path: 'user.name'
-					}
-				}
-			},
-			{
-				$match: { status: statusFilter }
+		const aggregate = Order.aggregate()
+		aggregate.search({
+			index: "nameIdx",
+			autocomplete: {
+				query: userName,
+				path: 'user.name'
 			}
-			]
-		)
+		}).match({ status: statusFilter })
+		orders = await Order.aggregatePaginate(aggregate, options)
 	}
 
-
-
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
+	console.log('order', orders)
 	res.status(StatusCodes.OK).json(orders)
 }
 

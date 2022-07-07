@@ -12,26 +12,61 @@ const getAllCategories = async (req, res) => {
 }
 const getAllProductOfACategory = async (req, res) => {
 	const categoryName = req.params.name
-	const products = await Product.find({ category: categoryName })
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
+	const products = await Product.paginate(
+		{ category: categoryName },
+		options
+	)
+	console.log('products', products)
+	if (!products) throw new CustomError.NotFoundError('Not found')
+
 	res.status(StatusCodes.OK).json(products)
 }
 const searchProductsInCategory = async (req, res) => {
 	const categoryName = req.params.category_name
 	const searchWordsProduct = req.body.searchWordsProduct
 	console.log(categoryName, searchWordsProduct)
-	const products = await Product.aggregate(
-		[{
-			$search: {
-				autocomplete: {
-					query: searchWordsProduct,
-					path: 'name'
-				}
-			}
+
+	if (!searchWordsProduct) {
+		req.params.name = categoryName
+		await getAllProductOfACategory(req, res)
+		return
+	}
+
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const options = {
+		sort: {
+			updatedAt: -1
 		},
-		{
-			$match: { category: categoryName }
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
+
+	const aggregate = Product.aggregate()
+	aggregate.search({
+		autocomplete: {
+			query: searchWordsProduct,
+			path: 'name'
 		}
-		])
+	}).match({
+		category: categoryName
+	})
+
+	const products = await Product.aggregatePaginate(aggregate, options)
+	console.log('products', products)
+
+	if (!products) throw new CustomError.NotFoundError('Not found')
 	res.status(StatusCodes.OK).json(products)
 }
 const createCategory = async (req, res) => {

@@ -14,15 +14,15 @@ const express = require('express')
 const router = express.Router()
 const authentication = require('../middleware/authentication')
 
-
+router.route('/all')
+	.post(authentication.authenticateUser, getAllProducts)
 router.route('/')
-	.get(getAllProducts)
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createProduct)
 router.route('/uploadImage')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
 
-router.route('/search/').get(getAllProducts)
-router.route('/search/:search_words').get(searchProducts)
+router.route('/search/').post(getAllProducts)
+router.route('/search/:search_words').post(searchProducts)
 
 router.route('/origins')
 	.get(authentication.authenticateUser, getOrigins)

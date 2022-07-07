@@ -24,5 +24,5 @@ router.route('/search/:category_name')
 router.route('/:id')
 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateCategory)
 	.delete(authentication.authenticateUser, authentication.authorizePermissions('admin'), deleteCategory)
-router.route('/:name').get(getAllProductOfACategory)
+router.route('/:name').post(getAllProductOfACategory)
 module.exports = router

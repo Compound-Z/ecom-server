@@ -8,6 +8,7 @@ const ghnAPI = require('../services/ghn/ghnAPI');
 const constant = require('../utils/constants')
 const { deleteManyProductsInCart } = require('./cartController')
 const randomstring = require('randomstring')
+
 const createOrder = async (req, res) => {
 	console.log("createOrder")
 	console.log('body: ', req.body)
@@ -145,15 +146,32 @@ const getMyOrders = async (req, res) => {
 //admin only
 const getAllOrders = async (req, res) => {
 	const statusFilter = req.body.statusFilter
-	let orders
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+
+
+	// const testPage = await Order.paginate({}, { page: 1, litmit: pageSize })
+	// const totalPages = testPage.totalPages
+	// const revertedPage = totalPages - page + 1
+	// console.log('revertedPage', revertedPage, testPage)
+	let orders = null
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '_id orderId user orderItems billing status updatedAt',
+	}
 	if (statusFilter) {
-		orders = await Order.find({
+		orders = await Order.paginate({
 			"status": statusFilter,
-		}).select('_id orderId user orderItems billing status updatedAt')
+		}, options)
 	} else {
-		orders = await Order.find({}).select('_id orderId user orderItems billing status updatedAt')
+		orders = await Order.paginate({}, options)
 	}
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
+	// console.log('order', orders)
 	res.status(StatusCodes.OK).json(orders)
 }
 
@@ -166,7 +184,6 @@ const getOrdersBaseOnTime = async (req, res) => {
 		await getOrdersBaseOnTimeSpan(req, res)
 	}
 
-
 }
 
 const getOrdersBaseOnNumberOfDays = async (req, res) => {
@@ -177,7 +194,7 @@ const getOrdersBaseOnNumberOfDays = async (req, res) => {
 	const orders = await Order.find(
 		{
 			createdAt: {
-				$gte: Date.now() - numberOfDays * 3600 * 1000 /** for now i test in hours. should change back to days:: constant.oneDayInMiliceconds*/
+				$gte: Date.now() - numberOfDays * constant.oneDayInMiliceconds/** for now i test in hours. should change back to days:: constant.oneDayInMiliceconds*/
 			}
 		},
 		'orderItems billing status createdAt'
@@ -437,42 +454,45 @@ const searchOrdersByOrderId = async (req, res) => {
 
 	const statusFilter = req.body.statusFilter
 	const orderId = req.body.orderId
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
 
 	if (!orderId) getAllOrders(req, res)
 
-	let orders = null
-	if (!statusFilter) {
-		orders = await Order.aggregate(
-			[{
-				$search: {
-					index: "orderIdx",
-					autocomplete: {
-						query: orderId,
-						path: 'orderId'
-					}
-				}
-			}
-			]
-		)
-	} else {
-		orders = await Order.aggregate(
-			[{
-				$search: {
-					index: "orderIdx",
-					autocomplete: {
-						query: orderId,
-						path: 'orderId'
-					}
-				}
-			},
-			{
-				$match: { status: statusFilter }
-			}
-			]
-		)
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '_id orderId user orderItems billing status updatedAt',
 	}
 
+	let orders = null
+	if (!statusFilter) {
+		const aggregate = Order.aggregate()
+		aggregate.search({
+			index: "orderIdx",
+			autocomplete: {
+				query: orderId,
+				path: 'orderId'
+			}
+		})
+		orders = await Order.aggregatePaginate(aggregate, options)
+	} else {
+		const aggregate = Order.aggregate()
+		aggregate.search({
+			index: "orderIdx",
+			autocomplete: {
+				query: orderId,
+				path: 'orderId'
+			}
+		}).match({ status: statusFilter })
+		orders = await Order.aggregatePaginate(aggregate, options)
+	}
+	console.log('order', orders)
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
+
 	res.status(StatusCodes.OK).json(orders)
 }
 
@@ -480,43 +500,44 @@ const searchOrdersByUserName = async (req, res) => {
 
 	const statusFilter = req.body.statusFilter
 	const userName = req.body.userName
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+
 	if (!userName) getAllOrders(req, res)
 
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '_id orderId user orderItems billing status updatedAt',
+	}
 	let orders = null
 	if (!statusFilter) {
-		orders = await Order.aggregate(
-			[{
-				$search: {
-					index: "nameIdx",
-					autocomplete: {
-						query: userName,
-						path: 'user.name'
-					}
-				}
+		const aggregate = Order.aggregate()
+		aggregate.search({
+			index: "nameIdx",
+			autocomplete: {
+				query: userName,
+				path: 'user.name'
 			}
-			]
-		)
+		})
+		orders = await Order.aggregatePaginate(aggregate, options)
 	} else {
-		orders = await Order.aggregate(
-			[{
-				$search: {
-					index: "nameIdx",
-					autocomplete: {
-						query: userName,
-						path: 'user.name'
-					}
-				}
-			},
-			{
-				$match: { status: statusFilter }
+		const aggregate = Order.aggregate()
+		aggregate.search({
+			index: "nameIdx",
+			autocomplete: {
+				query: userName,
+				path: 'user.name'
 			}
-			]
-		)
+		}).match({ status: statusFilter })
+		orders = await Order.aggregatePaginate(aggregate, options)
 	}
 
-
-
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
+	console.log('order', orders)
 	res.status(StatusCodes.OK).json(orders)
 }
 

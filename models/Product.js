@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Review = require('./Review') //todo: this should be removed when the app is done
 const constant = require('../utils/constants');
 const { Category, CategorySchema } = require('./Category');
+const mongoosePaginate = require('mongoose-paginate-v2');
+var aggregatePaginate = require("mongoose-aggregate-paginate-v2");
 
 const ProductSchema = new mongoose.Schema(
 	{
@@ -93,6 +95,6 @@ ProductSchema.post('remove', async function (next) {
 	})
 })
 
-
-
+ProductSchema.plugin(mongoosePaginate)
+ProductSchema.plugin(aggregatePaginate);
 module.exports = mongoose.model('Product', ProductSchema)

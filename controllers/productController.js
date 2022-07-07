@@ -138,6 +138,7 @@ const deleteProduct = async (req, res) => {
 const searchProducts = async (req, res) => {
 	/**currently, search by compounded text index: category-name */
 	/**Todo: Should be search by tags, or description? */
+	console.log('search product', req.body)
 	const searchWords = req.params.search_words
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
@@ -155,7 +156,6 @@ const searchProducts = async (req, res) => {
 		compound: {
 			should: [
 				{
-
 					autocomplete: {
 						query: searchWords,
 						path: 'name'

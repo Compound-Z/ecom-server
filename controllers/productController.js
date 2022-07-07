@@ -139,37 +139,39 @@ const searchProducts = async (req, res) => {
 	/**currently, search by compounded text index: category-name */
 	/**Todo: Should be search by tags, or description? */
 	const searchWords = req.params.search_words
-
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
 	/**autocomplete search by name, category using Atlas search index instead of text index*/
-	const products = await Product.aggregate([
-		{
-			$search: {
-				compound: {
-					should: [
-						{
+	const aggregate = Product.aggregate()
+	aggregate.search({
+		compound: {
+			should: [
+				{
 
-							autocomplete: {
-								query: searchWords,
-								path: 'name'
-							},
-						},
-						{
-							autocomplete: {
-								query: searchWords,
-								path: 'category'
-							},
-						}
-					],
+					autocomplete: {
+						query: searchWords,
+						path: 'name'
+					},
+				},
+				{
+					autocomplete: {
+						query: searchWords,
+						path: 'category'
+					},
 				}
-			}
+			],
 		}
-		/**Todo: this may be used with project: name, limit: 5, to create search suggestions */
-		// {
-		// 	$project: {
-		// 		score: { $meta: "searchScore" },
-		// 	}
-		// }
-	])
+	})
+	const products = await Product.aggregatePaginate(aggregate, options)
+	console.log('products', products)
 
 	if (!products) throw new CustomError.NotFoundError('Not found')
 	res.status(StatusCodes.OK).json(products)

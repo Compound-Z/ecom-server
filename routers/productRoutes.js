@@ -21,8 +21,8 @@ router.route('/')
 router.route('/uploadImage')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
 
-router.route('/search/').get(getAllProducts)
-router.route('/search/:search_words').get(searchProducts)
+router.route('/search/').post(getAllProducts)
+router.route('/search/:search_words').post(searchProducts)
 
 router.route('/origins')
 	.get(authentication.authenticateUser, getOrigins)

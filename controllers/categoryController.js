@@ -3,7 +3,6 @@ const Product = require('../models/Product')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
 const uploadFile = require('../utils/fileUploadHelper');
-const { createDocumentRegistry } = require('typescript');
 const { addUnderline } = require('../utils/stringHelper')
 
 const getAllCategories = async (req, res) => {

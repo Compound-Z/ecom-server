@@ -457,7 +457,10 @@ const searchOrdersByOrderId = async (req, res) => {
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
 
-	if (!orderId) getAllOrders(req, res)
+	if (!orderId) {
+		await getAllOrders(req, res)
+		return
+	}
 
 	const options = {
 		sort: {
@@ -503,7 +506,10 @@ const searchOrdersByUserName = async (req, res) => {
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
 
-	if (!userName) getAllOrders(req, res)
+	if (!userName) {
+		await getAllOrders(req, res)
+		return
+	}
 
 	const options = {
 		sort: {

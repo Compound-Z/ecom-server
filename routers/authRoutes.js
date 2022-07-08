@@ -11,6 +11,7 @@ const {
 	forgotPassword,
 	resetPassword,
 	refreshToken,
+	updateFCMToken
 } = require('../controllers/authController');
 
 router.post('/signup', passwordValidator, register);
@@ -20,5 +21,5 @@ router.post('/verify-otp', verifyOTP);
 router.post('/reset-password', passwordValidator, resetPassword);
 router.post('/forgot-password', forgotPassword);
 router.post('/refresh-token', refreshToken)
-
+router.post('/update-fcm-token', authenticateUser, updateFCMToken)
 module.exports = router;

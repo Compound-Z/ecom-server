@@ -38,6 +38,9 @@ const UserSchema = new mongoose.Schema({
 		default: false,
 	},
 	verified: Date,
+	fcmToken: {
+		type: String
+	}
 }, { timestamps: true });
 
 UserSchema.pre('save', async function () {

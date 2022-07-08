@@ -277,6 +277,23 @@ const refreshToken = async (req, res) => {
 		throw new CustomError.UnauthenticatedError(errorMsgs.INVALID_REFRESH_TOKEN)
 	}
 }
+const updateFCMToken = async (req, res) => {
+	const fcmToken = req.body.fcmToken
+	const userId = req.user.userId
+	if (!fcmToken) {
+		throw new CustomError.BadRequestError("FCM token is missing!")
+	}
+
+	const user = await User.findOneAndUpdate({
+		_id: userId
+	}, {
+		fcmToken: fcmToken
+	}, { new: true, runValidators: true })
+
+	if (!user) { throw new CustomError.NotFoundError('Not found user!') }
+	console.log('user', user)
+	res.status(StatusCodes.OK).json({ message: "update fcm token successfully!" })
+}
 module.exports = {
 	register,
 	login,
@@ -285,4 +302,5 @@ module.exports = {
 	forgotPassword,
 	resetPassword,
 	refreshToken,
+	updateFCMToken
 };

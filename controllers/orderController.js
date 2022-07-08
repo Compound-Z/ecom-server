@@ -8,6 +8,7 @@ const ghnAPI = require('../services/ghn/ghnAPI');
 const constant = require('../utils/constants')
 const { deleteManyProductsInCart } = require('./cartController')
 const randomstring = require('randomstring')
+const { sendPushNotiToCustomer } = require('../services/firebase/pushNotification')
 
 const createOrder = async (req, res) => {
 	console.log("createOrder")
@@ -294,7 +295,7 @@ const startProcessingOrder = async (req, res) => {
 	//todo: notify user/or can do caching to compare old data vs new data, so that the app can show red noti
 
 	res.status(StatusCodes.OK).json(order)
-
+	sendPushNotiToCustomer(user, order)
 }
 //admin only
 
@@ -614,6 +615,7 @@ const createShippingDetails = (totalWeight, shippingProvider, shippingServiceId)
 const createUserOrder = (userId, name, phoneNumber) => {
 	return { userId, name, phoneNumber }
 }
+
 // getShippingDetails
 
 module.exports = {

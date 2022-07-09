@@ -1,5 +1,8 @@
 var admin = require("firebase-admin");
 const serviceAccount = JSON.parse(process.env.GOOGLE_CREDS);
+const { fcmTTL } = require('../../utils/constants')
+const User = require('../../models/User')
+const CustomError = require('../../errors');
 
 admin.initializeApp({
 	credential: admin.credential.cert(serviceAccount)
@@ -21,15 +24,37 @@ const sendPushNotiToCustomer = async (user, order) => {
 	}
 	const options = {
 		priority: "high",
-		timeToLive: 60 * 60 * 24
+		timeToLive: fcmTTL
 	};
 	const result = await admin.messaging().sendToDevice(registrationToken, message, options)
 	console.log('result', result)
 	console.log('result', result.results[0].error)
+}
 
+const sendPushNotiToAdmins = async (user, order) => {
+	const userName = user.name
+	const title = getTitleAdmin(order.status)
+	const content = getContentAdmin(userName, order.status, order.orderId, order.billing.subTotal)
+	const orderId = order._id.toString()
+	const imageUrl = order.orderItems[0].imageUrl
+	const message = {
+		data: {
+			title,
+			content,
+			orderId,
+			imageUrl
+		},
+	}
+	const options = {
+		priority: "high",
+		timeToLive: fcmTTL
+	};
+
+	const result = await admin.messaging().sendToTopic('admin', message, options)
+	console.log('result', result)
 }
 const getContent = (orderStatus, orderId) => {
-	let subContent = "love you!"
+	let subContent = "Order updated!"
 
 	switch (orderStatus) {
 		case "PROCESSING":
@@ -45,7 +70,7 @@ const getContent = (orderStatus, orderId) => {
 }
 
 const getTitle = (orderStatus) => {
-	let subContent = "Processing order"
+	let subContent = "Order"
 
 	switch (orderStatus) {
 		case "PROCESSING":
@@ -59,6 +84,36 @@ const getTitle = (orderStatus) => {
 	}
 	return subContent
 }
+const getContentAdmin = (userName, orderStatus, orderId, total) => {
+	let subContent = "Order updated!"
 
+	switch (orderStatus) {
+		case "PENDING":
+			subContent = `${userName} has place an order ${orderId}. \nTotal: ${total}đ`
+			break;
+		case "CANCELED":
+			subContent = `${userName} has canceled an order ${orderId}.`
+			break;
+		default:
+			break;
+	}
+	return `${subContent}`
+}
 
-module.exports = { sendPushNotiToCustomer }
+const getTitleAdmin = (orderStatus) => {
+	let subContent = "Order"
+
+	switch (orderStatus) {
+		case "PENDING":
+			subContent = "New order"
+			break;
+		case "CANCELED":
+			subContent = "Oder canceled"
+			break;
+		default:
+			break;
+	}
+	return subContent
+}
+
+module.exports = { sendPushNotiToCustomer, sendPushNotiToAdmins }

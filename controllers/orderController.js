@@ -8,7 +8,7 @@ const ghnAPI = require('../services/ghn/ghnAPI');
 const constant = require('../utils/constants')
 const { deleteManyProductsInCart } = require('./cartController')
 const randomstring = require('randomstring')
-const { sendPushNotiToCustomer } = require('../services/firebase/pushNotification')
+const { sendPushNotiToCustomer, sendPushNotiToAdmins } = require('../services/firebase/pushNotification')
 
 const createOrder = async (req, res) => {
 	console.log("createOrder")
@@ -120,6 +120,8 @@ const createOrder = async (req, res) => {
 	// }
 	console.log("order", order)
 	res.status(StatusCodes.CREATED).json(order)
+
+	sendPushNotiToAdmins(user, order)
 }
 const getMyOrders = async (req, res) => {
 	console.log("getMyOrders")
@@ -348,6 +350,8 @@ const confirmOrder = async (req, res) => {
 	//todo: notify user
 	res.status(StatusCodes.OK).json(order)
 
+	//send push noti to custumer
+	sendPushNotiToCustomer(user, order)
 	/**update sold number and stock nunmber of product */
 	for (const item of order.orderItems) {
 		const product = await Product.findOneAndUpdate({
@@ -410,7 +414,10 @@ const cancelOrder = async (req, res) => {
 		throw new CustomError.BadRequestError(`Can not update order status, the order has already been ${order.status}!`)
 	}
 	//todo: notify user
+	console.log('newOrder', newOrder)
 	res.status(StatusCodes.OK).json(newOrder)
+
+	sendPushNotiToAdmins(user, newOrder)
 }
 
 /**only customer can receive their order, admin should not be able to*/

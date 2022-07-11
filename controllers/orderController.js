@@ -9,7 +9,7 @@ const constant = require('../utils/constants')
 const { deleteManyProductsInCart } = require('./cartController')
 const randomstring = require('randomstring')
 const { sendPushNotiToCustomer, sendPushNotiToAdmins } = require('../services/firebase/pushNotification')
-
+const { addListProductsToReviewQueue } = require('../controllers/reviewController')
 const createOrder = async (req, res) => {
 	console.log("createOrder")
 	console.log('body: ', req.body)
@@ -453,8 +453,11 @@ const receiveOrder = async (req, res) => {
 	} else {
 		throw new CustomError.BadRequestError(`Can not mark this order as RECEIVED, the order status is ${order.status}! \n You can only receive an order after it has been confirmed!`)
 	}
-	//todo: notify user
+
 	res.status(StatusCodes.OK).json(newOrder)
+
+	//add received products to reviewQueue
+	await addListProductsToReviewQueue(userId, newOrder)
 }
 
 

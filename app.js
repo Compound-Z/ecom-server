@@ -31,7 +31,7 @@ const categoryRouter = require('./routers/categoryRoutes')
 const cartRouter = require('./routers/cartRoute')
 const addressRouter = require('./routers/addressRoutes')
 const orderRouter = require('./routers/orderRoutes')
-
+const reviewRouter = require('./routers/reviewRoutes')
 
 /*USE*/
 app.use(morgan('tiny'))
@@ -49,6 +49,7 @@ app.use('/api/v1/categories', categoryRouter)
 app.use('/api/v1/cart', cartRouter)
 app.use('/api/v1/addresses', addressRouter)
 app.use('/api/v1/orders', orderRouter)
+app.use('/api/v1/reviews', reviewRouter)
 
 app.use(notFound)
 app.use(errorHandlerMiddleware)

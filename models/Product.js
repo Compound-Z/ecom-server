@@ -48,15 +48,34 @@ const ProductSchema = new mongoose.Schema(
 			required: true,
 			default: 0,
 		},
-		averageRating: {
-			type: Number,
-			default: 0,
-		},
 		weight: {
 			/**Need this info for shipping api */
 			type: Number,
 			required: [true, 'Please provide product\'s weight'],
 			default: 0,
+		},
+		averageRating: {
+			type: Number,
+			default: 0,
+			required: true
+		},
+		numberOfRating: {
+			type: Number,
+			min: 0,
+			default: 0,
+			required: true
+		},
+		sumRating: {
+			type: Number,
+			min: 0,
+			default: 0,
+			required: true
+		},
+		sumPrevRating: {
+			type: Number,
+			min: 0,
+			default: 0,
+			required: true
 		},
 	},
 	{ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

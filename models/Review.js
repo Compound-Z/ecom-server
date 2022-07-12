@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const CustomError = require('../errors');
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const ReviewSchema = mongoose.Schema({
 	userId: {
@@ -119,5 +120,6 @@ ReviewSchema.post('save', async function () {
 // 	console.log('post update', "")
 // 	await this.constructor.calculateAverageRatingUpdateReview(this.productId, this.rating, this.preRating);
 // });
+ReviewSchema.plugin(mongoosePaginate)
 const Review = mongoose.model('Review', ReviewSchema);
 module.exports = Review

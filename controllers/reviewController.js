@@ -1,6 +1,4 @@
-const Order = require('../models/Order')
 const Product = require('../models/Product')
-const User = require('../models/User')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
 const constant = require('../utils/constants')
@@ -63,9 +61,9 @@ const createReview = async (req, res) => {
 	const product = await Product.findOne({ _id: productId })
 	if (!product) throw new CustomError.NotFoundError(`Can not found product with id: ${productId}`)
 
-	const productInQueue = await ReviewQueue.findOne({ _id: reviewQueueId })
+	const productInQueue = await ReviewQueue.findOne({ _id: reviewQueueId, productId: product._id })
 	if (!productInQueue) throw new CustomError.BadRequestError('You can not review this product, this might because you have not bought this product yet')
-	if (productInQueue.reviewRef) throw new CustomError.BadRequestError('This product has already been reviewed!')
+	if (productInQueue.reviewRef) throw new CustomError.BadRequestError('You can not re-review this product. Edit your review instead!')
 
 	//only create new review if there is no reviewRef in that pending review
 	const reviewObj = {
@@ -140,10 +138,56 @@ const calculateAverageRatingUpdateReview = async (productId, rating, preRating) 
 	}
 }
 
+const getListReviewsOfAProduct = async (req, res) => {
+	const userId = req.user.userId
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const productId = req.params.product_id
+	if (!productId) throw new CustomError.BadRequestError('productId is missing')
+
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+	}
+	const reviews = await Review.paginate(
+		{
+			userId,
+			productId
+		},
+		options
+	)
+	if (!reviews) throw new CustomError.NotFoundError('Not found reviews')
+	res.status(StatusCodes.OK).json(reviews)
+}
+
+const getAllReviews = async (req, res) => {
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+	}
+	const reviews = await Review.paginate(
+		{},
+		options
+	)
+
+	if (!reviews) throw new CustomError.NotFoundError('Not found reviews')
+	res.status(StatusCodes.OK).json(reviews)
+}
+
 
 module.exports = {
 	addListProductsToReviewQueue,
 	getListReviewQueueProducts,
 	createReview,
-	updateReview
+	updateReview,
+	getListReviewsOfAProduct,
+	getAllReviews
 }

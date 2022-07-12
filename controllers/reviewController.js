@@ -85,8 +85,65 @@ const createReview = async (req, res) => {
 
 	res.status(StatusCodes.CREATED).json(newReview)
 }
+
+const updateReview = async (req, res) => {
+	const { userId } = req.user
+	const { rating, content } = req.body
+	const reviewId = req.params.review_id
+
+	const review = await Review.findOne({ userId, _id: reviewId })
+	if (!review) throw new CustomError.NotFoundError(`Can not found product with id: ${reviewId}`)
+	if (review.isEdited) throw new CustomError.NotFoundError(`This review has been edited before, can not edit again!`)
+	const prevRating = review.rating
+	const productId = review.productId
+
+	const updatedReview = await Review.findOneAndUpdate(
+		{
+			userId,
+			_id: reviewId
+		},
+		{
+			rating,
+			content,
+			isEdited: true
+		},
+		{ new: true, runValidators: true }
+	)
+
+	if (!updatedReview) throw new CustomError.BadRequestError('System error, can not update this review.')
+
+	//re-calculate rating after updating review
+	await calculateAverageRatingUpdateReview(productId, rating, prevRating)
+
+	res.status(StatusCodes.OK).json(updatedReview)
+}
+
+const calculateAverageRatingUpdateReview = async (productId, rating, preRating) => {
+	try {
+		const product = await Product.findOne(
+			{ _id: productId },
+		);
+		const numberOfRating = product.numberOfRating
+		const oldAverageRating = product.averageRating
+		const delta = rating - preRating
+		const newAverageRating = oldAverageRating + delta / numberOfRating
+		const newSumRating = product.sumPrevRating + rating
+
+		product.averageRating = newAverageRating
+		product.sumRating = newSumRating
+
+		const updatedProduct = await product.save()
+		console.log('updated product', updatedProduct)
+	} catch (error) {
+		console.log(error);
+		throw new CustomError.InternalServerError('System error while trying to calculate rating, please try again later!')
+	}
+}
+
+
 module.exports = {
 	addListProductsToReviewQueue,
 	getListReviewQueueProducts,
-	createReview
+	createReview,
+	updateReview
 }

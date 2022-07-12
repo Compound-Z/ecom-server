@@ -1,6 +1,7 @@
 const {
 	getListReviewQueueProducts,
 	createReview,
+	updateReview,
 } = require('../controllers/reviewController')
 
 // const { getAllReviewsOfAProduct } = require('../controllers/reviewCotroller')
@@ -21,9 +22,9 @@ router.route('/')
 // router.route('/origins')
 // 	.get(authentication.authenticateUser, getOrigins)
 
-// router.route('/:id')
-// 	.get(getProductDetails)
-// 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateProduct)
+router.route('/:review_id')
+	// 	.get(getProductDetails)
+	.patch(authentication.authenticateUser, updateReview)
 // 	.delete(authentication.authenticateUser, authentication.authorizePermissions('admin'), deleteProduct)
 // // router.route('/:id/reviews').get(getAllReviewsOfAProduct)
 

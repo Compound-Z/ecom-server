@@ -42,6 +42,15 @@ const ReviewSchema = mongoose.Schema({
 		maxlength: 250,
 		required: [true, 'Please provide review content'],
 	},
+	isEdited: {
+		type: Boolean,
+		default: false
+	},
+	prevRating: {
+		type: Number,
+		min: 1,
+		max: 5
+	}
 },
 	{ timestamps: true }
 );
@@ -71,19 +80,24 @@ ReviewSchema.statics.calculateAverageRatingAddReview = async function (productId
 	}
 };
 
-ReviewSchema.statics.calculateAverageRatingUpdateReview = async function (productId) {
+ReviewSchema.statics.calculateAverageRatingUpdateReview = async function (productId, rating, preRating) {
+	console.log('post', "calculateAverageRatingUpdateReview")
+
 	try {
 		const product = await this.model('Product').findOne(
 			{ _id: productId },
 		);
 		const numberOfRating = product.numberOfRating
-		const newRating = product.sumPrevRating / numberOfRating + this.rating / numberOfRating
-		const newSumRating = product.sumPrevRating + this.rating
+		const oldAverageRating = product.averageRating
+		const delta = rating - preRating
+		const newAverageRating = oldAverageRating + delta / numberOfRating
+		const newSumRating = product.sumPrevRating + rating
 
-		product.rating = newRating
+		product.averageRating = newAverageRating
 		product.sumRating = newSumRating
 
-		await product.save()
+		const updatedProduct = await product.save()
+		console.log('updated product', updatedProduct)
 	} catch (error) {
 		console.log(error);
 		throw new CustomError.InternalServerError('System error while trying to calculate rating, please try again later!')
@@ -91,11 +105,19 @@ ReviewSchema.statics.calculateAverageRatingUpdateReview = async function (produc
 };
 
 ReviewSchema.post('save', async function () {
+	console.log('post save', this)
+
 	await this.constructor.calculateAverageRatingAddReview(this.productId, this.rating);
 });
 
-// ReviewSchema.post('remove', async function () {
-// 	await this.constructor.calculateAverageRating(this.product);
+// ReviewSchema.pre('updateOne', async function () {
+// 	console.log('data', data)
+// 	this.prevRating = this.rating
+// 	console.log('pre', this.prevRating)
+// });
+// ReviewSchema.post('findOneAndUpdate', async function (doc) {
+// 	console.log('post update', "")
+// 	await this.constructor.calculateAverageRatingUpdateReview(this.productId, this.rating, this.preRating);
 // });
 const Review = mongoose.model('Review', ReviewSchema);
 module.exports = Review

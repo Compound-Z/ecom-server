@@ -1,5 +1,6 @@
 const {
-	getListReviewQueueProducts
+	getListReviewQueueProducts,
+	createReview,
 } = require('../controllers/reviewController')
 
 // const { getAllReviewsOfAProduct } = require('../controllers/reviewCotroller')
@@ -7,10 +8,10 @@ const express = require('express')
 const router = express.Router()
 const authentication = require('../middleware/authentication')
 
-router.route('/my-reviews')
+router.route('/my-review-queue')
 	.post(authentication.authenticateUser, getListReviewQueueProducts)
-// router.route('/')
-// 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createProduct)
+router.route('/')
+	.post(authentication.authenticateUser, createReview)
 // router.route('/uploadImage')
 // 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
 

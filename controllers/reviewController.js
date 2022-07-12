@@ -5,6 +5,7 @@ const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
 const constant = require('../utils/constants')
 const ReviewQueue = require('../models/ReviewQueue')
+const Review = require('../models/Review')
 const addListProductsToReviewQueue = async (userId, order) => {
 	if (!userId || !order) throw new CustomError.BadRequestError('user id and order can not be null')
 	const orderItems = order.orderItems
@@ -55,7 +56,37 @@ const getListReviewQueueProducts = async (req, res) => {
 	res.status(StatusCodes.OK).json(reviews)
 }
 
+const createReview = async (req, res) => {
+	const { userId, name: userName } = req.user
+	const { reviewQueueId, productId, rating, content } = req.body
+
+	const product = await Product.findOne({ _id: productId })
+	if (!product) throw new CustomError.NotFoundError(`Can not found product with id: ${productId}`)
+
+	const productInQueue = await ReviewQueue.findOne({ _id: reviewQueueId })
+	if (!productInQueue) throw new CustomError.BadRequestError('You can not review this product, this might because you have not bought this product yet')
+	if (productInQueue.reviewRef) throw new CustomError.BadRequestError('This product has already been reviewed!')
+
+	//only create new review if there is no reviewRef in that pending review
+	const reviewObj = {
+		userId,
+		userName,
+		productId,
+		productName: product.name,
+		imageUrl: product.imageUrl,
+		rating,
+		content
+	}
+	const newReview = await Review.create(reviewObj)
+	if (!newReview) throw new CustomError.BadRequestError('System error, can not create new review.')
+	//update newReview id to reviewQueue
+	productInQueue.reviewRef = newReview._id
+	const x = await productInQueue.save()
+
+	res.status(StatusCodes.CREATED).json(newReview)
+}
 module.exports = {
 	addListProductsToReviewQueue,
-	getListReviewQueueProducts
+	getListReviewQueueProducts,
+	createReview
 }

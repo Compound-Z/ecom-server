@@ -47,21 +47,22 @@ const ReviewSchema = mongoose.Schema({
 );
 ReviewSchema.index({ productId: 1 });
 
-ReviewSchema.statics.calculateAverageRatingAddReview = async function (productId) {
+ReviewSchema.statics.calculateAverageRatingAddReview = async function (productId, rating) {
 	try {
 		const product = await this.model('Product').findOne(
 			{ _id: productId },
 		);
-
 		const newNumberOfRating = product.numberOfRating + 1
-		const newRating = product.sumRating / newNumberOfRating + this.rating / newNumberOfRating
+		const newRating = product.sumRating / newNumberOfRating + rating / newNumberOfRating
 		const newSumPrevRating = product.sumRating
-		const newSumRating = product.sumRating + this.rating
+		const newSumRating = product.sumRating + rating
+
 
 		product.rating = newRating
 		product.numberOfRating = newNumberOfRating
 		product.sumRating = newSumRating
 		product.sumPrevRating = newSumPrevRating
+		product.averageRating = newRating
 
 		await product.save()
 	} catch (error) {
@@ -75,7 +76,6 @@ ReviewSchema.statics.calculateAverageRatingUpdateReview = async function (produc
 		const product = await this.model('Product').findOne(
 			{ _id: productId },
 		);
-
 		const numberOfRating = product.numberOfRating
 		const newRating = product.sumPrevRating / numberOfRating + this.rating / numberOfRating
 		const newSumRating = product.sumPrevRating + this.rating
@@ -91,14 +91,11 @@ ReviewSchema.statics.calculateAverageRatingUpdateReview = async function (produc
 };
 
 ReviewSchema.post('save', async function () {
-	await this.constructor.calculateAverageRating(this.product);
+	await this.constructor.calculateAverageRatingAddReview(this.productId, this.rating);
 });
 
-ReviewSchema.post('remove', async function () {
-	await this.constructor.calculateAverageRating(this.product);
-});
-const ReviewModel = mongoose.model('Review', ReviewSchema);
-module.exports = {
-	ReviewModel,
-	ReviewSchema
-}
+// ReviewSchema.post('remove', async function () {
+// 	await this.constructor.calculateAverageRating(this.product);
+// });
+const Review = mongoose.model('Review', ReviewSchema);
+module.exports = Review

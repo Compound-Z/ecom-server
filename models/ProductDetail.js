@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { ReviewSchema } = require('./Review') //todo: this should be removed when the app is done
 
 const ProductDetailSchema = new mongoose.Schema({
 	productId: {
@@ -33,9 +32,6 @@ const ProductDetailSchema = new mongoose.Schema({
 		type: Number,
 		default: 0,
 	},
-	reviews: [
-		ReviewSchema
-	],
 	description: {
 		type: String,
 		required: [true, 'Please provide product description'],

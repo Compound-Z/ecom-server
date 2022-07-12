@@ -143,6 +143,7 @@ const getListReviewsOfAProduct = async (req, res) => {
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
 	const productId = req.params.product_id
+	const starFilter = req.body.starFilter
 	if (!productId) throw new CustomError.BadRequestError('productId is missing')
 
 	const options = {
@@ -152,11 +153,13 @@ const getListReviewsOfAProduct = async (req, res) => {
 		page: page,
 		limit: pageSize,
 	}
+	const query = {
+		userId,
+		productId
+	}
+	if (starFilter) query.rating = starFilter
 	const reviews = await Review.paginate(
-		{
-			userId,
-			productId
-		},
+		query,
 		options
 	)
 	if (!reviews) throw new CustomError.NotFoundError('Not found reviews')
@@ -166,6 +169,8 @@ const getListReviewsOfAProduct = async (req, res) => {
 const getAllReviews = async (req, res) => {
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
+	const starFilter = req.body.starFilter
+
 	const options = {
 		sort: {
 			updatedAt: -1
@@ -173,8 +178,11 @@ const getAllReviews = async (req, res) => {
 		page: page,
 		limit: pageSize,
 	}
+	const query = {}
+	if (starFilter) query.rating = starFilter
+
 	const reviews = await Review.paginate(
-		{},
+		query,
 		options
 	)
 

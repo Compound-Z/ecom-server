@@ -28,6 +28,16 @@ const getAllProducts = async (req, res) => {
 	res.status(StatusCodes.OK).json(products)
 }
 
+const getOneProduct = async (req, res) => {
+	const productId = req.params.product_id
+	if (!productId) throw new CustomError.BadRequestError('productId is missing')
+
+	const product = await Product.findOne({ _id: productId })
+	if (!product) throw new CustomError.NotFoundError('Can not found this product')
+
+	res.status(StatusCodes.OK).json(product)
+}
+
 const getProductDetails = async (req, res) => {
 	const productId = req.params.id
 
@@ -182,6 +192,7 @@ const getOrigins = async (req, res) => {
 	if (!countries) throw CustomError.NotFoundError('Not found countries')
 	res.status(StatusCodes.OK).json(countries)
 }
+
 module.exports = {
 	getAllProducts,
 	getProductDetails,
@@ -190,5 +201,6 @@ module.exports = {
 	updateProduct,
 	deleteProduct,
 	searchProducts,
-	getOrigins
+	getOrigins,
+	getOneProduct
 }

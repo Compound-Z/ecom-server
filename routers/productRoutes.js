@@ -6,7 +6,8 @@ const {
 	updateProduct,
 	deleteProduct,
 	searchProducts,
-	getOrigins
+	getOrigins,
+	getOneProduct
 } = require('../controllers/productController')
 
 // const { getAllReviewsOfAProduct } = require('../controllers/reviewCotroller')
@@ -15,7 +16,9 @@ const router = express.Router()
 const authentication = require('../middleware/authentication')
 
 router.route('/all')
-	.post(authentication.authenticateUser, getAllProducts)
+	.post(getAllProducts)
+router.route('/get-one-product/:product_id')
+	.get(getOneProduct)
 router.route('/')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createProduct)
 router.route('/uploadImage')

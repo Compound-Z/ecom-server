@@ -190,6 +190,28 @@ const getAllReviews = async (req, res) => {
 	res.status(StatusCodes.OK).json(reviews)
 }
 
+// const getReviewCounts = async (req, res) => {
+// 	const productId = req.params.productId
+
+// 	const options = {
+// 		sort: {
+// 			updatedAt: -1
+// 		},
+// 		page: page,
+// 		limit: pageSize,
+// 	}
+// 	const query = {}
+// 	if (starFilter) query.rating = starFilter
+
+// 	const reviews = await Review.paginate(
+// 		query,
+// 		options
+// 	)
+
+// 	if (!reviews) throw new CustomError.NotFoundError('Not found reviews')
+// 	res.status(StatusCodes.OK).json(reviews)
+// }
+
 
 module.exports = {
 	addListProductsToReviewQueue,

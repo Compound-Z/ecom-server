@@ -36,6 +36,7 @@ const getListReviewQueueProducts = async (req, res) => {
 		limit: pageSize,
 	}
 	if (filter === 'REVIEWED') {
+		options.populate = { path: 'reviewRef', select: 'userName content rating' }
 		reviews = await ReviewQueue.paginate({
 			userId: userId,
 			"reviewRef": {
@@ -48,6 +49,8 @@ const getListReviewQueueProducts = async (req, res) => {
 			"reviewRef": null
 		}, options)
 	}
+
+	console.log('reviews', reviews)
 
 	if (!reviews) throw new CustomError.NotFoundError('Not found reviews')
 	// console.log('order', orders)

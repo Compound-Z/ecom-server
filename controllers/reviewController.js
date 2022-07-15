@@ -36,7 +36,7 @@ const getListReviewQueueProducts = async (req, res) => {
 		limit: pageSize,
 	}
 	if (filter === 'REVIEWED') {
-		options.populate = { path: 'reviewRef', select: 'userName content rating' }
+		options.populate = { path: 'reviewRef', select: 'userName content rating isEdited' }
 		reviews = await ReviewQueue.paginate({
 			userId: userId,
 			"reviewRef": {
@@ -93,7 +93,7 @@ const updateReview = async (req, res) => {
 	const reviewId = req.params.review_id
 
 	const review = await Review.findOne({ userId, _id: reviewId })
-	if (!review) throw new CustomError.NotFoundError(`Can not found product with id: ${reviewId}`)
+	if (!review) throw new CustomError.NotFoundError(`Can not found review with id: ${reviewId}`)
 	if (review.isEdited) throw new CustomError.NotFoundError(`This review has been edited before, can not edit again!`)
 	const prevRating = review.rating
 	const productId = review.productId

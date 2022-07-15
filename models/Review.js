@@ -39,8 +39,8 @@ const ReviewSchema = mongoose.Schema({
 	},
 	content: {
 		type: String,
-		minlength: 12,
-		maxlength: 250,
+		minlength: [12, 'Review is too short, min length is 12 characters'],
+		maxlength: [500, 'Review is too long, max length is 500 characters'],
 		required: [true, 'Please provide review content'],
 	},
 	isEdited: {

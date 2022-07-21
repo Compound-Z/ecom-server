@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
-
+const { ShopSchema } = require('./Shop')
 const UserSchema = new mongoose.Schema({
 	name: {
 		type: String,
@@ -40,6 +40,11 @@ const UserSchema = new mongoose.Schema({
 	verified: Date,
 	fcmToken: {
 		type: String
+	},
+	//if an user sign-up as a seller/shop, they have below additional properties.
+	shopInfo: {
+		type: ShopSchema,
+		ref: 'Shop'
 	}
 }, { timestamps: true });
 

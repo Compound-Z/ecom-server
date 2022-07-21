@@ -232,7 +232,9 @@ module.exports = {
 	deleteAddressItem,
 	getProvinces,
 	getDistricts,
-	getWards
+	getWards,
+	getAndCheckAddress,
+	getAddressItemObj
 	// createCategory,
 	// uploadImage,
 	// updateCategory,

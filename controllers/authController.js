@@ -1,10 +1,15 @@
 const User = require('../models/User');
 const Cart = require('../models/Cart')
 const Token = require('../models/Token');
+const { Address } = require('../models/Address')
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
 const { body, validationResult } = require('express-validator');
 const errorMsgs = require('../errors/error_msgs')
+const Shop = require('../models/Shop')
+const { addUnderline, removeUnderline } = require('../utils/stringHelper')
+const ghnAPI = require('../services/ghn/ghnAPI');
+const { getAddressItemObj, getAndCheckAddress } = require('./addressController')
 const {
 	createJWT,
 	isTokenValid,
@@ -30,7 +35,12 @@ const register = async (req, res) => {
 		throw new CustomError.BadRequestError("Please provide a stronger password: minimum eight characters, at least one uppercase letter, one lowercase letter and one number!")
 	}
 
-	const { phoneNumber, name, password } = req.body;
+	const { phoneNumber, name, password, role, shopName, imageUrl, provinceId, districtId, wardCode, detailedAddress } = req.body;
+	if (!phoneNumber || !name || !password || !role) throw new CustomError.BadRequestError('Please provide required info')
+	if (role === 'seller') {
+		if (!shopName || !imageUrl || !provinceId || !districtId || !wardCode || !detailedAddress) throw new CustomError.BadRequestError('Please provide required info')
+		shopNameUnderLine = addUnderline(shopName)
+	}
 
 	const existedUser = await User.findOne({ phoneNumber });
 	if (existedUser && existedUser.isVerified) {
@@ -38,8 +48,8 @@ const register = async (req, res) => {
 	}
 
 	// first registered user is an admin
-	const isFirstAccount = (await User.countDocuments({})) === 0;
-	const role = isFirstAccount ? 'admin' : 'customer';
+	// const isFirstAccount = (await User.countDocuments({})) === 0;
+	// const role = isFirstAccount ? 'admin' : 'customer';
 
 	//if user existed but has not verified yet, update new name, password
 	if (existedUser && !existedUser.isVerified) {
@@ -48,7 +58,8 @@ const register = async (req, res) => {
 		await existedUser.save()
 	}
 
-	//if user have not existed yet, create an Cart object and associate it with User
+	//if user have not existed yet, create an Shop object and associate it with User
+
 	let user = null;
 	if (!existedUser) {
 		user = await User.create({
@@ -58,8 +69,16 @@ const register = async (req, res) => {
 			role,
 		});
 		/**after creating a brand new user, create a new cart and associate it with the just-created user */
-		const cart = await Cart.create({ userId: user._id })
-		const address = await Address.create({ userId: user._id })
+		if (user.role === 'seller') {
+			const { province, district, ward } = await getAndCheckAddress(provinceId, districtId, wardCode)
+			const addressItem = getAddressItemObj(provinceId, province, districtId, district, wardCode, ward, detailedAddress, user.name, user.phoneNumber)
+			const shop = await Shop.create({ userId: user._id, name: shopNameUnderLine, addressItem, imageUrl })
+		}
+		else if (user.role === 'customer') {
+			const cart = await Cart.create({ userId: user._id })
+			const address = await Address.create({ userId: user._id })
+		}
+
 	} else {
 		user = existedUser
 	}
@@ -109,12 +128,33 @@ const verifyOTP = async (req, res) => {
 		return
 	}
 
+	const shop = await Shop.findOneAndUpdate({ userId: user._id })
+	//create new shippingShop on ghn system if there is not shippingShop belongs to this shop
+	if (!shop.shippingShopId) {
+		const addressItem = shop.addressItem
+		const shippingShop = await ghnAPI.storeAPI.createStore(
+			addressItem.district.districtId,
+			addressItem.ward.code,
+			{
+				name: removeUnderline(shop.name),
+				phone: phoneNumber,
+				address: addressItem.detailedAddress,
+			}
+		)
+		if (shippingShop.message) {
+			//if error
+			throw new CustomError.InternalServerError(`Giaohangnhanh: ${shippingShop.message}`)
+		}
+		//update shipping shop id to shop 
+		shop.shippingShopId = shippingShop.shop_id;
+		console.log('shop', shop);
+		await shop.save();
+	}
+
 	//if check successfully
 	(user.isVerified = true), (user.verified = Date.now());
-
 	//todo: uncomment
 	await user.save();
-
 	res.status(StatusCodes.OK).json({ message: errorMsgs.VERIFY_OTP_SUCCESSFULLY, status: errorMsgs.APPROVED });
 };
 

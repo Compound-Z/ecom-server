@@ -29,6 +29,7 @@
     "morgan": "^1.10.0",
     "randomstring": "^1.2.2",
     "twilio": "^3.77.1",
+    "underscore": "^1.13.4",
     "validator": "^13.7.0"
   },
   "devDependencies": {

@@ -1,5 +1,6 @@
 const Order = require('../models/Order')
 const Product = require('../models/Product')
+const Shop = require('../models/Shop')
 const User = require('../models/User')
 const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
@@ -10,6 +11,7 @@ const { deleteManyProductsInCart } = require('./cartController')
 const randomstring = require('randomstring')
 const { sendPushNotiToCustomer, sendPushNotiToAdmins } = require('../services/firebase/pushNotification')
 const { addListProductsToReviewQueue } = require('../controllers/reviewController')
+const _ = require('underscore');
 const createOrder = async (req, res) => {
 	console.log("createOrder")
 	console.log('body: ', req.body)
@@ -26,7 +28,6 @@ const createOrder = async (req, res) => {
 	const addressItemId = req.body.addressItemId
 	const note = req.body.note
 	const shippingProvider = req.body.shippingProvider
-	const shippingServiceId = req.body.shippingServiceId
 
 	//get userInfo
 	const user = await User.findOne({
@@ -41,16 +42,35 @@ const createOrder = async (req, res) => {
 		oidArr.push(orderItem.productId)
 	});
 	console.log('oidArr:', oidArr)
+
+	//todo: populate shop
 	const products = await Product.find({
 		_id: {
 			$in: oidArr
 		}
-	}).select('_id sku name category price imageUrl quantity weight').lean()
+	})
+		.populate({
+			path: 'shopId',
+			select: { 'shippingShopId': 1, 'addressItem': 1 }
+		})
+		.select('_id sku name category price imageUrl quantity weight orderId').lean()
 	if (!products) throw new CustomError.InternalServerError('Error')
 	if (products.length == 0) throw new CustomError.NotFoundError('Order is empty or Can not find product')
-	console.log('products:', products)
 
-	//get address
+	//assign quantity and productId from orderItems to each product
+	const sortedOrderItems = _(orderItems).sortBy(item => item.productId)
+	const sortedProducts = _(products).sortBy(product => product._id)
+	sortedProducts.forEach((element, idx) => {
+		element.quantity = sortedOrderItems[idx].quantity
+		element.productId = element._id
+		element.shippingServiceId = sortedOrderItems[idx].shippingServiceId
+	});
+	console.log('sorted products', products)
+	//todo: group products by shop so that each group will be a sub-order
+	const productsGrouped = _(products).groupBy(product => product.shopId._id)
+
+	console.log('grouped products', productsGrouped)
+	// get user's address
 	const address = await Address.findOne({
 		userId,
 		"addresses._id": addressItemId
@@ -63,65 +83,81 @@ const createOrder = async (req, res) => {
 	})
 	if (!address) throw new CustomError.NotFoundError('Address does not exist')
 
-	//get total weight and product cost
+	//calculate total weight and product cost of each sub-order
+	let ordersObj = {}
+	for (let [groupName, products] of Object.entries(productsGrouped)) {
+		const result = calWeightCost(products)
+		ordersObj[groupName] = {
+			totalWeight: result.totalWeight,
+			totalProductCost: result.totalProductCost
+		}
+	}
+	console.log('ordersObj', ordersObj)
+
+	//cal shipping fee for each sub order
+	for (const [groupName, products] of Object.entries(productsGrouped)) {
+		// //get shipping fee //todo: eastimate base on shop
+		const estimatedShippingFee = await ghnAPI.serviceAndCalculateFeeAPI.calculateFee(
+			products[0].shippingServiceId,
+			products[0].shopId.addressItem.district.districtId,
+			address.addresses[0].district.districtId,
+			address.addresses[0].ward.code,
+			ordersObj[groupName].totalWeight,
+			constant.shipping.PACKAGE_LENGTH_DEFAULT,
+			constant.shipping.PACKAGE_WIDTH_DEFAULT,
+			constant.shipping.PACKAGE_HEIGHT_DEFAULT,
+			ordersObj[groupName].totalProductCost
+		)
+		ordersObj[groupName]["shippingFee"] = estimatedShippingFee
+		console.log('shipping fee:', estimatedShippingFee)
+	}
+	console.log('ordersObj 2', ordersObj)
+
+	// //todo: for each shop, create billing, shipping details
+	// const userOrder = createUserOrder(userId, user.name, user.phoneNumber)
+	// const billing = createBilling(totalProductCost, estimatedShippingFee, paymentMethod)
+	// const shippingDetails = createShippingDetails(totalWeight, shippingProvider, shippingServiceId)
+	// //foreach shop, create an order
+	// const order = await Order.create({
+	// 	orderId: orderId,
+	// 	user: userOrder,
+	// 	address: address.addresses[0],
+	// 	orderItems: products,
+	// 	billing,
+	// 	note,
+	// 	shippingDetails
+	// })
+	// if (!order) {
+	// 	throw new CustomError.InternalServerError('System Error: Can not create new order')
+	// }
+
+
+	// //delete products in cart after ordering
+	// await deleteManyProductsInCart(userId, orderItems)
+
+	// // if (paymentMethod === 'COD') {
+	// // 	res.status(StatusCodes.CREATED).json({
+	// // 		paymentMethod,
+	// // 		orders
+	// // 	})
+	// // } else {
+	// // 	createPaymentOrder(paymentMethod, products)
+	// // 	//handle: resturn and exception
+	// // }
+	// console.log("order", order)
+	// res.status(StatusCodes.CREATED).json(order)
+	// //todo: send pust notis to many sellers
+	// sendPushNotiToAdmins(user, order)
+}
+const calWeightCost = (products) => {
 	let totalWeight = 0
 	let totalProductCost = 0
-	for (const [idx, item] of orderItems.entries()) {
-		products[idx].quantity = item.quantity
-		products[idx].productId = item.productId
-		totalWeight += products[idx].weight * products[idx].quantity
-		totalProductCost += products[idx].price * products[idx].quantity
-	};
-	console.log('totalWeight:', totalWeight)
-	console.log('totalProductCost:', totalProductCost)
+	products.forEach(product => {
+		totalWeight += product.weight * product.quantity
+		totalProductCost += product.price * product.quantity
+	});
+	return { totalWeight, totalProductCost }
 
-	//get shipping fee
-	const estimatedShippingFee = await ghnAPI.serviceAndCalculateFeeAPI.calculateFee(
-		shippingServiceId,
-		parseInt(process.env.SHOP_DISTRICT_ID),
-		address.addresses[0].district.districtId,
-		address.addresses[0].ward.code,
-		totalWeight,
-		constant.shipping.PACKAGE_LENGTH_DEFAULT,
-		constant.shipping.PACKAGE_WIDTH_DEFAULT,
-		constant.shipping.PACKAGE_HEIGHT_DEFAULT,
-		totalProductCost
-	)
-	console.log('shipping fee:', estimatedShippingFee)
-	const userOrder = createUserOrder(userId, user.name, user.phoneNumber)
-	const billing = createBilling(totalProductCost, estimatedShippingFee, paymentMethod)
-	const shippingDetails = createShippingDetails(totalWeight, shippingProvider, shippingServiceId)
-
-	const order = await Order.create({
-		orderId: orderId,
-		user: userOrder,
-		address: address.addresses[0],
-		orderItems: products,
-		billing,
-		note,
-		shippingDetails
-	})
-	if (!order) {
-		throw new CustomError.InternalServerError('System Error: Can not create new order')
-	}
-
-
-	//delete products in cart after ordering
-	await deleteManyProductsInCart(userId, orderItems)
-
-	// if (paymentMethod === 'COD') {
-	// 	res.status(StatusCodes.CREATED).json({
-	// 		paymentMethod,
-	// 		orders
-	// 	})
-	// } else {
-	// 	createPaymentOrder(paymentMethod, products)
-	// 	//handle: resturn and exception
-	// }
-	console.log("order", order)
-	res.status(StatusCodes.CREATED).json(order)
-
-	sendPushNotiToAdmins(user, order)
 }
 const getMyOrders = async (req, res) => {
 	console.log("getMyOrders")
@@ -562,7 +598,6 @@ const getShippingFeeOptions = async (req, res) => {
 	const userId = req.user.userId
 	const addressItemId = req.body.addressItemId
 	const cartItems = req.body.cartItems
-
 	if (cartItems.length == 0) throw new CustomError.BadRequestError('No item to calculate fee')
 
 	const address = await Address.findOne({
@@ -585,6 +620,10 @@ const getShippingFeeOptions = async (req, res) => {
 		products.push(product)
 	};
 
+	//get shop info
+	const shopId = products[0].shopId
+	const shop = await Shop.findOne({ _id: shopId })
+
 	let totalWeight = 0
 	let totalProductCost = 0
 	products.forEach(product => {
@@ -597,7 +636,8 @@ const getShippingFeeOptions = async (req, res) => {
 	console.log(`toDis: ${address.addresses[0].district.districtId} toWard: ${address.addresses[0].ward.code}`)
 	console.log('xxx', constant.shipping.PACKAGE_LENGTH_DEFAULT)
 	const feeOptions = await ghnAPI.serviceAndCalculateFeeAPI.calculateFeeOptions(
-		parseInt(process.env.SHOP_DISTRICT_ID),
+		parseInt(shop.shippingShopId),
+		parseInt(shop.addressItem.district.districtId),
 		address.addresses[0].district.districtId,
 		address.addresses[0].ward.code,
 		totalWeight,
@@ -606,6 +646,7 @@ const getShippingFeeOptions = async (req, res) => {
 		constant.shipping.PACKAGE_HEIGHT_DEFAULT,
 		totalProductCost
 	)
+
 
 	res.status(StatusCodes.OK).json(feeOptions)
 }

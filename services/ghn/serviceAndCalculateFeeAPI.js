@@ -16,49 +16,44 @@ const giaohangnhanh_1 = __importDefault(require("giaohangnhanh"));
 const ghn = new giaohangnhanh_1.default(process.env.GHN_API_KEY_TEST ? process.env.GHN_API_KEY_TEST : "", { test: true });
 const serviceAndCalculateFeeAPIAxios = require('./serviceAndCalculateFeeAPIAxios');
 const CustomError = require('../../errors');
-const calculateFeeOptions = (fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue) => __awaiter(void 0, void 0, void 0, function* () {
-    const shopId = parseInt(process.env.SHOP_ID + '');
+const calculateFeeOptions = (shopId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue) => __awaiter(void 0, void 0, void 0, function* () {
     const services = yield serviceAndCalculateFeeAPIAxios.getServices(shopId, fromDistrictId, toDistrictId);
     console.log('services:', services);
     const feeOptions = [];
-    console.log('service:', services);
     for (const service of services.data) {
-        const fee = yield ghn.service.calculateFee(shopId, {
-            service_id: service.service_id,
-            insurance_value: insuranceValue,
-            to_district_id: toDistrictId,
-            to_ward_code: toWardCode,
-            weight: weight,
-            length: length,
-            width: width,
-            height: height
-        });
-        console.log('fee', fee);
-        if (!fee.message)
-            feeOptions.push({ service_id: service.service_id, name: service.short_name, fee });
+        console.log(shopId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue, service.service_id);
+        const response = yield serviceAndCalculateFeeAPIAxios.calculateFee(service.service_id, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue);
+        console.log('response', response);
+        if (response.code == 200)
+            feeOptions.push({ service_id: service.service_id, name: service.short_name, fee: response.data });
     }
+    console.log('fee options', feeOptions);
     return feeOptions;
 });
 const calculateExpectedDeliveryTime = (provinceId) => __awaiter(void 0, void 0, void 0, function* () {
     return ghn.address.getDistricts(provinceId);
 });
 const calculateFee = (shippingServiceId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue) => __awaiter(void 0, void 0, void 0, function* () {
-    const shopId = parseInt(process.env.SHOP_ID + '');
-    const fee = yield ghn.service.calculateFee(shopId, {
-        service_id: shippingServiceId,
-        insurance_value: insuranceValue,
-        to_district_id: toDistrictId,
-        to_ward_code: toWardCode,
-        weight: weight,
-        length: length,
-        width: width,
-        height: height
-    });
-    console.log('fee:', fee);
-    if (fee.message) {
-        throw new CustomError.BadRequestError(`Shipping service error: ${fee.message}`);
+    console.log('cal fee', shippingServiceId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue);
+    const response = yield serviceAndCalculateFeeAPIAxios.calculateFee(shippingServiceId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue);
+    console.log('response', response);
+    // const fee = await ghn.service.calculateFee(
+    // 	{
+    // 		service_id: shippingServiceId,
+    // 		insurance_value: insuranceValue,
+    // 		to_district_id: toDistrictId,
+    // 		to_ward_code: toWardCode,
+    // 		weight: weight,
+    // 		length: length,
+    // 		width: width,
+    // 		height: height
+    // 	}
+    // )
+    console.log('response:', response);
+    if (!(response.code == 200)) {
+        throw new CustomError.BadRequestError(`Shipping service error: ${response.message}`);
     }
-    return fee;
+    return response.data;
 });
 module.exports = {
     calculateFeeOptions,

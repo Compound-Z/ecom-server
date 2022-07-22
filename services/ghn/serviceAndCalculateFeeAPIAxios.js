@@ -20,4 +20,32 @@ const getServices = async (
 	return services
 }
 
-module.exports = { getServices }
+const calculateFee = async (
+	serviceId,
+	fromDistrictId, toDistrictId, toWardCode,
+	weight, length, width, height,
+	insuranceValue) => {
+	const response = await axios.post(
+		'https://dev-online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee',
+		{
+			"from_district_id": fromDistrictId,
+			"service_id": serviceId,
+			"to_district_id": toDistrictId,
+			"to_ward_code": toWardCode,
+			"height": height,
+			"length": length,
+			"weight": weight,
+			"width": width,
+			"insurance_value": insuranceValue
+		}, {
+		headers: {
+			'Content-Type': 'application/json',
+			'Token': token
+		}
+	}
+	)
+
+	return response.data
+}
+
+module.exports = { getServices, calculateFee }

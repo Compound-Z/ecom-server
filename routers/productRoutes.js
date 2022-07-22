@@ -1,5 +1,6 @@
 const {
 	getAllProducts,
+	getMyProducts,
 	getProductDetails,
 	createProduct,
 	uploadImage,
@@ -17,6 +18,8 @@ const authentication = require('../middleware/authentication')
 
 router.route('/all')
 	.post(getAllProducts)
+router.route('/my-products')
+	.post(authentication.authenticateUser, authentication.authorizePermissions('admin', 'seller'), getMyProducts)
 router.route('/get-one-product/:product_id')
 	.get(getOneProduct)
 router.route('/')

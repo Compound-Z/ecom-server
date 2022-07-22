@@ -28,6 +28,27 @@ const getAllProducts = async (req, res) => {
 	res.status(StatusCodes.OK).json(products)
 }
 
+const getMyProducts = async (req, res) => {
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const shopId = req.user.shopId
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
+	const products = await Product.paginate(
+		{ shopId },
+		options
+	)
+
+	if (!products) throw new CustomError.NotFoundError('Not found')
+	res.status(StatusCodes.OK).json(products)
+}
+
 const getOneProduct = async (req, res) => {
 	const productId = req.params.product_id
 	if (!productId) throw new CustomError.BadRequestError('productId is missing')
@@ -199,6 +220,7 @@ const getOrigins = async (req, res) => {
 
 module.exports = {
 	getAllProducts,
+	getMyProducts,
 	getProductDetails,
 	createProduct,
 	uploadImage,

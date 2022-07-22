@@ -81,6 +81,7 @@ const ProductSchema = new mongoose.Schema(
 			type: mongoose.Schema.ObjectId,
 			ref: 'Shop',
 			required: true,
+			index: true,
 		}
 	},
 	{ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

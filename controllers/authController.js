@@ -180,10 +180,14 @@ const login = async (req, res) => {
 		throw new CustomError.UnauthenticatedError(errorMsgs.VERIFY_PHONE);
 	}
 
-	const shop = await Shop.findOne({ userId: user._id })
-	if (!user) {
-		throw new CustomError.NotFoundError('Can not find user shop');
+	let shop = null
+	if (user.role === 'seller') {
+		shop = await Shop.findOne({ userId: user._id })
+		if (!shop) {
+			throw new CustomError.NotFoundError('Can not find user shop');
+		}
 	}
+
 	const tokenUser = createTokenUser(user, shop);
 
 	// create refresh token

@@ -1,5 +1,6 @@
 const {
 	getAllCategories,
+	getMyCategories,
 	getAllProductOfACategory,
 	searchProductsInCategory,
 	createCategory,
@@ -13,10 +14,11 @@ const express = require('express')
 const router = express.Router()
 const authentication = require('../middleware/authentication')
 
-
 router.route('/')
 	.get(getAllCategories)
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createCategory)
+router.route('/my-categories')
+	.get(authentication.authenticateUser, authentication.authorizePermissions('seller'), getMyCategories)
 router.route('/uploadImage')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
 router.route('/search/:category_name')

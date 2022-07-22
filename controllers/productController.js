@@ -89,6 +89,7 @@ const createProduct = async (req, res) => {
 	/**check category */
 	const category = await Category.findOne({ name: productReq.category })
 	if (!category) throw new CustomError.BadRequestError('Category does not exist')
+	productReq.categoryRef = category._id
 	console.log('category', category)
 	/**First, create a product doc */
 	const product = await Product.create(productReq)

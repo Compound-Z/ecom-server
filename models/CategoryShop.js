@@ -1,12 +1,11 @@
 const mongoose = require('mongoose');
 
 const CategoryShopSchema = new mongoose.Schema({
-	name: {
-		type: String,
-		minlength: 2,
-		maxlength: 40,
-		default: "Others",
-		required: [true, 'Please provide category name'],
+	categoryRef: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'Category',
+		required: true,
+		index: true,
 	},
 	numberOfProduct: {
 		type: Number,

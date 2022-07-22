@@ -38,6 +38,12 @@ const ProductSchema = new mongoose.Schema(
 			type: String,
 			required: [true, 'Please provide product category'],
 		},
+		categoryRef: {
+			type: mongoose.Schema.ObjectId,
+			ref: 'Category',
+			required: true,
+			index: true,
+		},
 		stockNumber: {
 			type: Number,
 			required: true,
@@ -109,13 +115,13 @@ ProductSchema.post('save', async function (next) {
 
 	let pos = null
 	shop.categories.forEach((category, idx) => {
-		if (category.name === this.category) {
+		if (category.categoryRef.equals(this.categoryRef)) {
 			pos = idx
 		}
 	});
 	if (pos == null) {
 		shop.categories.push({
-			name: this.category,
+			categoryRef: this.categoryRef,
 			numberOfProduct: 1
 		})
 	} else {
@@ -131,7 +137,7 @@ ProductSchema.post('remove', async function (next) {
 
 	let pos = null
 	shop.categories.forEach((category, idx) => {
-		if (category.name === this.category) {
+		if (category.categoryRef.equals(this.categoryRef)) {
 			pos = idx
 		}
 	});

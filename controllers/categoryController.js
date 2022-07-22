@@ -4,10 +4,21 @@ const { StatusCodes } = require('http-status-codes')
 const CustomError = require('../errors');
 const uploadFile = require('../utils/fileUploadHelper');
 const { addUnderline } = require('../utils/stringHelper')
+const Shop = require('../models/Shop')
 
 const getAllCategories = async (req, res) => {
 	const categories = await Category.find({})
 	res.status(StatusCodes.OK).json(categories)
+}
+const getMyCategories = async (req, res) => {
+	const shopId = req.user.shopId
+	const shop = await Shop.findOne({ _id: shopId })
+		.populate({
+			path: 'categories.categoryRef',
+			select: { 'name': 1, 'imageUrl': 1 }
+		})
+	console.log('shop', shop.categories)
+	res.status(StatusCodes.OK).json(shop.categories)
 }
 const getAllProductOfACategory = async (req, res) => {
 	const categoryName = req.params.name
@@ -145,6 +156,7 @@ const deleteCategory = async (req, res) => {
 
 module.exports = {
 	getAllCategories,
+	getMyCategories,
 	getAllProductOfACategory,
 	searchProductsInCategory,
 	createCategory,

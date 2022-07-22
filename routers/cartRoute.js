@@ -11,8 +11,8 @@ const authentication = require('../middleware/authentication')
 
 
 router.route('/')
-	.get(authentication.authenticateUser, getAllProductsInCart)
-	.post(authentication.authenticateUser, addAProductToCart)
+	.get(authentication.authenticateUser, authentication.authorizePermissions('customer'), getAllProductsInCart)
+	.post(authentication.authenticateUser, authentication.authorizePermissions('customer'), addAProductToCart)
 router.route('/:productId')
 	.patch(authentication.authenticateUser, adjustProductQuantityInCart)
 	.delete(authentication.authenticateUser, deleteProductInCart)

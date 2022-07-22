@@ -10,6 +10,12 @@ const CartItemSchema = new mongoose.Schema({
 		default: 1,
 		min: 1,
 		required: true
+	},
+	shop: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'Shop',
+		required: true,
+		index: true,
 	}
 })
 module.exports = {

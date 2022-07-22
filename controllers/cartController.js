@@ -30,7 +30,12 @@ const getAllProductsInCart = async (req, res) => {
 		_id: {
 			$in: oidArr
 		}
-	}).select('_id name price imageUrl quantity weight sku').lean()
+	})
+		.populate({
+			path: 'shopId',
+			select: { 'name': 1, 'imageUrl': 1 }
+		})
+		.select('_id name price imageUrl quantity weight sku shopId').lean()
 
 	console.log('products:', products)
 	if (!products) throw new CustomError.InternalServerError('Error')
@@ -75,7 +80,8 @@ const addAProductToCart = async (req, res) => {
 				$push: {
 					cartItems: {
 						productId,
-						quantity
+						quantity,
+						shop: product.shopId,
 					}
 				}
 			},

@@ -38,6 +38,11 @@ const ProductDetailSchema = new mongoose.Schema({
 		minlength: [50, 'Description need to be longer than 50 characters'],
 		maxlength: [2500, 'Description can not be more than 2500 characters'],
 	},
+	shopId: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'Shop',
+		required: true,
+	}
 	// featured: {
 	// 	type: Boolean,
 	// 	default: false,

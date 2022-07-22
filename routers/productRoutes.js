@@ -20,7 +20,7 @@ router.route('/all')
 router.route('/get-one-product/:product_id')
 	.get(getOneProduct)
 router.route('/')
-	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), createProduct)
+	.post(authentication.authenticateUser, authentication.authorizePermissions('admin', 'seller'), createProduct)
 router.route('/uploadImage')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
 
@@ -33,7 +33,7 @@ router.route('/origins')
 router.route('/:id')
 	.get(getProductDetails)
 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateProduct)
-	.delete(authentication.authenticateUser, authentication.authorizePermissions('admin'), deleteProduct)
+	.delete(authentication.authenticateUser, authentication.authorizePermissions('admin', 'seller'), deleteProduct)
 // router.route('/:id/reviews').get(getAllReviewsOfAProduct)
 
 module.exports = router

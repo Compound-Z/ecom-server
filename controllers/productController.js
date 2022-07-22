@@ -53,13 +53,17 @@ const createProduct = async (req, res) => {
 	console.log('body: ', req.body)
 	req.body.user = 'test_user_id'
 	const { product: productReq, productDetail: productDetailReq } = req.body
+	const shopId = req.user.shopId
+	console.log('shopId', shopId)
 	// const productReq = req.body.product
 	// const productDetailReq = req.body.productDetail
 
 	console.log("Req:", productDetailReq)
-	if (!productReq || !productDetailReq) {
-		throw new CustomError.BadRequestError('productReq or productDetailReq is missing')
+	if (!productReq || !productDetailReq || !shopId) {
+		throw new CustomError.BadRequestError('productReq, productDetailReq or shopId is missing')
 	}
+	productReq.shopId = shopId
+	productDetailReq.shopId = shopId
 	productReq.category = addUnderline(productReq.category)
 	/**check category */
 	const category = await Category.findOne({ name: productReq.category })
@@ -130,14 +134,14 @@ const updateProduct = async (req, res) => {
 }
 const deleteProduct = async (req, res) => {
 	const productId = req.params.id
-
-	const product = await Product.findOne({ _id: productId })
+	const shopId = req.user.shopId
+	const product = await Product.findOne({ _id: productId, shopId })
 	if (!product) {
 		throw new CustomError.NotFoundError(`This product with id ${productId} does not exist`)
 	}
 	await product.remove()
 
-	const productDetail = await ProductDetail.findOneAndDelete({ productId: productId })
+	const productDetail = await ProductDetail.findOneAndDelete({ productId: productId, shopId })
 	if (!productDetail) {
 		throw new CustomError.NotFoundError(`This productDetail does not exist`)
 	}

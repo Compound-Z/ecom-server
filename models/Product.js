@@ -77,6 +77,11 @@ const ProductSchema = new mongoose.Schema(
 			default: 0,
 			required: true
 		},
+		shopId: {
+			type: mongoose.Schema.ObjectId,
+			ref: 'Shop',
+			required: true,
+		}
 	},
 	{ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -95,23 +100,50 @@ ProductSchema.pre('remove', async function (next) {
 })
 
 ProductSchema.post('save', async function (next) {
-	const products = await this.model("Product").find({ category: this.category })
+	console.log('shopId', this.shopId)
 
-	const category = await this.model("Category").findOneAndUpdate({
-		name: this.category
-	}, {
-		numberOfProduct: products.length
-	})
+	const shop = await this.model('Shop').findOne({ _id: this.shopId })
+	console.log('shop', shop)
+	shop.numberOfProduct = shop.numberOfProduct + 1
+
+	let pos = null
+	shop.categories.forEach((category, idx) => {
+		if (category.name === this.category) {
+			pos = idx
+		}
+	});
+	if (pos == null) {
+		shop.categories.push({
+			name: this.category,
+			numberOfProduct: 1
+		})
+	} else {
+		shop.categories[pos].numberOfProduct = shop.categories[pos].numberOfProduct + 1
+	}
+	await shop.save()
 })
 
 ProductSchema.post('remove', async function (next) {
-	const products = await this.model("Product").find({ category: this.category })
+	const shop = await this.model('Shop').findOne({ _id: this.shopId })
 
-	const category = await this.model("Category").findOneAndUpdate({
-		name: this.category
-	}, {
-		numberOfProduct: products.length
-	})
+	if (shop.numberOfProduct - 1 >= 0) shop.numberOfProduct = shop.numberOfProduct - 1
+
+	let pos = null
+	shop.categories.forEach((category, idx) => {
+		if (category.name === this.category) {
+			pos = idx
+		}
+	});
+	if (pos != null) {
+		if (shop.categories[pos].numberOfProduct - 1 > 0) {
+			shop.categories[pos].numberOfProduct = shop.categories[pos].numberOfProduct - 1
+		}
+		else if (shop.categories[pos].numberOfProduct - 1 == 0) {
+			//if there is no product in a category, remove  the category from shop
+			shop.categories.splice(pos, 1)
+		}
+	}
+	await shop.save()
 })
 
 ProductSchema.plugin(mongoosePaginate)

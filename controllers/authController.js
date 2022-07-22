@@ -108,7 +108,7 @@ const verifyOTP = async (req, res) => {
 	const { otp, phoneNumber } = req.body;
 	console.log('body', req.body)
 	const user = await User.findOne({ phoneNumber });
-
+	console.log('user', user)
 	if (!user) {
 		throw new CustomError.UnauthenticatedError(errorMsgs.USER_DOES_NOT_EXIST);
 	}
@@ -127,8 +127,9 @@ const verifyOTP = async (req, res) => {
 		res.status(StatusCodes.OK).json({ message: errorMsgs.VERIFY_OTP_FAILED, status: errorMsgs.PENDING })
 		return
 	}
+	console.log('role seller', user.role === 'seller')
 	if (user.role === 'seller') {
-		const shop = await Shop.findOneAndUpdate({ userId: user._id })
+		const shop = await Shop.findOneAndUpdate({ userId: user._id }, {})
 		//create new shippingShop on ghn system if there is not shippingShop belongs to this shop
 		if (!shop.shippingShopId) {
 			const addressItem = shop.addressItem

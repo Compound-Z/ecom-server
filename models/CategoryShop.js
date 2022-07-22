@@ -7,8 +7,6 @@ const CategoryShopSchema = new mongoose.Schema({
 		maxlength: 40,
 		default: "Others",
 		required: [true, 'Please provide category name'],
-		unique: true,
-		sparse: true
 	},
 	numberOfProduct: {
 		type: Number,

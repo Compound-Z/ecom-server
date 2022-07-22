@@ -127,29 +127,31 @@ const verifyOTP = async (req, res) => {
 		res.status(StatusCodes.OK).json({ message: errorMsgs.VERIFY_OTP_FAILED, status: errorMsgs.PENDING })
 		return
 	}
-
-	const shop = await Shop.findOneAndUpdate({ userId: user._id })
-	//create new shippingShop on ghn system if there is not shippingShop belongs to this shop
-	if (!shop.shippingShopId) {
-		const addressItem = shop.addressItem
-		const shippingShop = await ghnAPI.storeAPI.createStore(
-			addressItem.district.districtId,
-			addressItem.ward.code,
-			{
-				name: removeUnderline(shop.name),
-				phone: phoneNumber,
-				address: addressItem.detailedAddress,
+	if (user.role === 'seller') {
+		const shop = await Shop.findOneAndUpdate({ userId: user._id })
+		//create new shippingShop on ghn system if there is not shippingShop belongs to this shop
+		if (!shop.shippingShopId) {
+			const addressItem = shop.addressItem
+			const shippingShop = await ghnAPI.storeAPI.createStore(
+				addressItem.district.districtId,
+				addressItem.ward.code,
+				{
+					name: removeUnderline(shop.name),
+					phone: phoneNumber,
+					address: addressItem.detailedAddress,
+				}
+			)
+			if (shippingShop.message) {
+				//if error
+				throw new CustomError.InternalServerError(`Giaohangnhanh: ${shippingShop.message}`)
 			}
-		)
-		if (shippingShop.message) {
-			//if error
-			throw new CustomError.InternalServerError(`Giaohangnhanh: ${shippingShop.message}`)
+			//update shipping shop id to shop 
+			shop.shippingShopId = shippingShop.shop_id;
+			console.log('shop', shop);
+			await shop.save();
 		}
-		//update shipping shop id to shop 
-		shop.shippingShopId = shippingShop.shop_id;
-		console.log('shop', shop);
-		await shop.save();
 	}
+
 
 	//if check successfully
 	(user.isVerified = true), (user.verified = Date.now());
@@ -177,7 +179,12 @@ const login = async (req, res) => {
 	if (!user.isVerified) {
 		throw new CustomError.UnauthenticatedError(errorMsgs.VERIFY_PHONE);
 	}
-	const tokenUser = createTokenUser(user);
+
+	const shop = await Shop.findOne({ userId: user._id })
+	if (!user) {
+		throw new CustomError.NotFoundError('Can not find user shop');
+	}
+	const tokenUser = createTokenUser(user, shop);
 
 	// create refresh token
 	let refreshToken = '';

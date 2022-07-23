@@ -1,33 +1,20 @@
 import GHN from "giaohangnhanh";
 const { shipping } = require('../../utils/constants')
+const orderAPIAxios = require('./orderAPIAxios')
+const CustomError = require('../../errors');
+
 const ghn: GHN = new GHN(process.env.GHN_API_KEY_TEST ? process.env.GHN_API_KEY_TEST : "", { test: true })
-const createOrder = async (order: Order) => {
-	const shopId = parseInt(process.env.SHOP_ID + '')
-	const fullAddress = `${order.address.detailedAddress}, ${order.address.ward.name}, ${order.address.district.name}, ${order.address.province.name}`
-	console.log('order', order)
-	return ghn.order.createOrder(
-		shopId,
-		{
-			to_name: order.user.name,
-			to_phone: order.user.phoneNumber,
-			to_address: fullAddress,
-			to_ward_code: order.address.ward.code,
-			to_district_id: order.address.district.districtId,
-			service_id: order.shippingDetails.shippingServiceId,
-			service_type_id: order.shippingDetails.shippingServiceTypeId,
-			content: "Thái Ngà Shop",
-			weight: order.shippingDetails.weight,
-			length: shipping.PACKAGE_LENGTH_DEFAULT,
-			width: shipping.PACKAGE_WIDTH_DEFAULT,
-			height: shipping.PACKAGE_HEIGHT_DEFAULT,
-			payment_type_id: 2,//buyer pay shipping fee
-			required_note: 'KHONGCHOXEMHANG',
-			cod_amount: order.billing.subTotal,
-			insurance_value: order.billing.subTotal,
-			note: order.note,
-			items: order.orderItems,
-		}
-	)
+const createOrder = async (shopId: number, order: Order) => {
+	console.log('shopId', shopId)
+	console.log('order 2', order)
+
+	const shippingOrder = await orderAPIAxios.createOrder(shopId, order)
+
+	if (!(shippingOrder.code == 200)) {
+		throw new CustomError.BadRequestError(`Creating shipping order error: ${shippingOrder.message}`);
+	}
+	console.log('orderAPI', shippingOrder.data)
+	return shippingOrder.data
 }
 
 class Order {
@@ -39,7 +26,6 @@ class Order {
 	note: string
 	shippingDetails: ShippingDetails
 	employee: OrderUser
-
 	constructor(
 		user: OrderUser,
 		address: AddressItem,
@@ -48,7 +34,7 @@ class Order {
 		status: string,
 		note: string,
 		shippingDetails: ShippingDetails,
-		employee: OrderUser
+		employee: OrderUser,
 	) {
 		this.user = user
 		this.address = address,

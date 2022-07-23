@@ -330,10 +330,12 @@ const startProcessingOrder = async (req, res) => {
 	const userId = req.user.userId
 	const shopId = req.user.shopId
 	console.log('shopId', shopId)
-	const user = await User.findOne({
+
+	//this is seller info
+	const seller = await User.findOne({
 		_id: userId
 	})
-	if (!user) throw CustomError.NotFoundError('User does not exist')
+	if (!seller) throw CustomError.NotFoundError('User does not exist')
 
 	const order = await Order.findOneAndUpdate({
 		_id: orderId,
@@ -345,8 +347,8 @@ const startProcessingOrder = async (req, res) => {
 		$set: {
 			status: 'PROCESSING',
 			"employee.userId": userId,
-			"employee.name": user.name,
-			"employee.phoneNumber": user.phoneNumber
+			"employee.name": seller.name,
+			"employee.phoneNumber": seller.phoneNumber
 		}
 	}, { new: true, runValidators: true })
 	if (!order) {
@@ -357,7 +359,7 @@ const startProcessingOrder = async (req, res) => {
 	//todo: notify user/or can do caching to compare old data vs new data, so that the app can show red noti
 
 	res.status(StatusCodes.OK).json(order)
-	sendPushNotiToCustomer(user, order)
+	sendPushNotiToCustomer(order)
 }
 //admin only
 
@@ -365,31 +367,36 @@ const startProcessingOrder = async (req, res) => {
 const confirmOrder = async (req, res) => {
 	/**Confirming means the shop has packed the order and transfer to shipping provider */
 	const userId = req.user.userId
+	const shopId = req.user.shopId
 	const orderId = req.params.order_id
 
 	console.log('confirming order')
 
-	const user = await User.findOne({
+	const seller = await User.findOne({
 		_id: userId
 	})
-	if (!user) throw CustomError.NotFoundError('User does not exist')
+	if (!seller) throw CustomError.NotFoundError('User does not exist')
 
 	const order = await Order.findOneAndUpdate({
-		"user.userId": userId,
-		_id: orderId
+		_id: orderId,
+		shopRef: shopId,
+		status: {
+			$in: constant.confirmableStatus
+		}
 	}, {
 		$set: {
 			status: 'CONFIRMED',
 			"employee.userId": userId,
-			"employee.name": user.name,
-			"employee.phoneNumber": user.phoneNumber
+			"employee.name": seller.name,
+			"employee.phoneNumber": seller.phoneNumber
 		}
-	}, { new: true, runValidators: true })
-	if (!order) throw new CustomError.NotFoundError('Order does not exist')
-
+	}, { new: true, runValidators: true }).populate('shopRef')
+	if (!order) throw new CustomError.NotFoundError('Order does not exist or you can not CONFIRM this order')
+	console.log('order', order)
 	//only create new shipping order if there is no one
 	if (!order.shippingDetails.expectedDeliveryTime) {
-		const shippingOrder = await ghnAPI.orderAPI.createOrder(order)
+		console.log('shipping shop', order.shopRef.shippingShopId)
+		const shippingOrder = await ghnAPI.orderAPI.createOrder(parseInt(order.shopRef.shippingShopId), order)
 		console.log('shippingOrder', shippingOrder)
 		if (shippingOrder.message) {
 			//if failed creating shipping order, revert confirming order.
@@ -411,7 +418,7 @@ const confirmOrder = async (req, res) => {
 	res.status(StatusCodes.OK).json(order)
 
 	//send push noti to custumer
-	sendPushNotiToCustomer(user, order)
+	sendPushNotiToCustomer(order)
 	/**update sold number and stock nunmber of product */
 	for (const item of order.orderItems) {
 		const product = await Product.findOneAndUpdate({

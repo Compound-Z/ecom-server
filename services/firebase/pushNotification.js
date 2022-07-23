@@ -9,11 +9,13 @@ admin.initializeApp({
 	credential: admin.credential.cert(serviceAccount)
 });
 
-const sendPushNotiToCustomer = async (user, order) => {
+const sendPushNotiToCustomer = async (order) => {
 	const title = getTitle(order.status)
 	const content = getContent(order.status, order.orderId)
 	const orderId = order._id.toString()
-	const registrationToken = user.fcmToken ? user.fcmToken : "dummy"
+
+	const customer = await User.findOne({ _id: order.user.userId })
+	const registrationToken = customer.fcmToken ? customer.fcmToken : "dummy"
 	const imageUrl = order.orderItems[0].imageUrl
 	const message = {
 		data: {

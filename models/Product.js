@@ -47,7 +47,7 @@ const ProductSchema = new mongoose.Schema(
 		stockNumber: {
 			type: Number,
 			required: true,
-			default: 0,
+			default: 50,
 		},
 		saleNumber: {
 			type: Number,

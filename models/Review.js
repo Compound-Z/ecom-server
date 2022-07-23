@@ -51,7 +51,13 @@ const ReviewSchema = mongoose.Schema({
 		type: Number,
 		min: 1,
 		max: 5
-	}
+	},
+	shopRef: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'Shop',
+		required: true,
+		index: true,
+	},
 },
 	{ timestamps: true }
 );

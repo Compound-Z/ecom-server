@@ -76,7 +76,8 @@ const createReview = async (req, res) => {
 		productName: product.name,
 		imageUrl: product.imageUrl,
 		rating,
-		content
+		content,
+		shopRef: product.shopId,
 	}
 	const newReview = await Review.create(reviewObj)
 	if (!newReview) throw new CustomError.BadRequestError('System error, can not create new review.')
@@ -169,10 +170,12 @@ const getListReviewsOfAProduct = async (req, res) => {
 	res.status(StatusCodes.OK).json(reviews)
 }
 
+//get all reviews of a shop
 const getAllReviews = async (req, res) => {
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
 	const starFilter = req.body.starFilter
+	const shopId = req.user.shopId
 
 	const options = {
 		sort: {
@@ -181,7 +184,7 @@ const getAllReviews = async (req, res) => {
 		page: page,
 		limit: pageSize,
 	}
-	const query = {}
+	const query = { shopRef: shopId }
 	if (starFilter) query.rating = starFilter
 
 	const reviews = await Review.paginate(

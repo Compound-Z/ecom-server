@@ -12,11 +12,11 @@ const router = express.Router()
 const authentication = require('../middleware/authentication')
 
 router.route('/all')
-	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), getAllReviews)
+	.post(authentication.authenticateUser, authentication.authorizePermissions('admin', 'seller'), getAllReviews)
 router.route('/my-review-queue')
 	.post(authentication.authenticateUser, getListReviewQueueProducts)
 router.route('/')
-	.post(authentication.authenticateUser, createReview)
+	.post(authentication.authenticateUser, authentication.authorizePermissions('customer'), createReview)
 // router.route('/uploadImage')
 // 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
 

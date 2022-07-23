@@ -61,6 +61,12 @@ const OrderSchema = new mongoose.Schema({
 		type: OrderUserSchema,
 		ref: 'OrderUser'
 	},
+	shopRef: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'Shop',
+		required: true,
+		index: true,
+	}
 }, { timestamps: true })
 OrderSchema.plugin(mongoosePaginate)
 OrderSchema.plugin(aggregatePaginate);

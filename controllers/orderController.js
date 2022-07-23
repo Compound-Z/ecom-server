@@ -17,9 +17,7 @@ const createOrder = async (req, res) => {
 	console.log('body: ', req.body)
 	req.body.user = 'test_user_id'
 
-	/**create orderId */
-	const today = new Date().toJSON().slice(0, 10).replace(/-/g, '');
-	const orderId = today + randomstring.generate(5)
+
 
 	/**order paramaters */
 	const userId = req.user.userId
@@ -113,41 +111,49 @@ const createOrder = async (req, res) => {
 	}
 	console.log('ordersObj 2', ordersObj)
 
-	// //todo: for each shop, create billing, shipping details
-	// const userOrder = createUserOrder(userId, user.name, user.phoneNumber)
-	// const billing = createBilling(totalProductCost, estimatedShippingFee, paymentMethod)
-	// const shippingDetails = createShippingDetails(totalWeight, shippingProvider, shippingServiceId)
-	// //foreach shop, create an order
-	// const order = await Order.create({
-	// 	orderId: orderId,
-	// 	user: userOrder,
-	// 	address: address.addresses[0],
-	// 	orderItems: products,
-	// 	billing,
-	// 	note,
-	// 	shippingDetails
-	// })
-	// if (!order) {
-	// 	throw new CustomError.InternalServerError('System Error: Can not create new order')
+	const userOrder = createUserOrder(userId, user.name, user.phoneNumber)
+	//todo: for each shop, create billing, shipping details
+	let listCreatedOrder = []
+	for (const [groupName, products] of Object.entries(productsGrouped)) {
+		const subOrder = ordersObj[groupName]
+		const orderId = generateOrderId()
+		const billing = createBilling(subOrder.totalProductCost, subOrder.shippingFee, paymentMethod)
+		const shippingDetails = createShippingDetails(subOrder.totalWeight, shippingProvider, products[0].shippingServiceId)
+		//foreach shop, create an order
+		const order = await Order.create({
+			orderId: orderId,
+			user: userOrder,
+			address: address.addresses[0],
+			orderItems: products,
+			billing,
+			note,
+			shippingDetails,
+			shopRef: products[0].shopId._id
+		})
+		if (!order) {
+			throw new CustomError.InternalServerError('System Error: Can not create new order')
+		}
+		console.log("order", order)
+		listCreatedOrder.push(order)
+	}
+
+	//delete products in cart after ordering
+	await deleteManyProductsInCart(userId, orderItems)
+
+	// if (paymentMethod === 'COD') {
+	// 	res.status(StatusCodes.CREATED).json({
+	// 		paymentMethod,
+	// 		orders
+	// 	})
+	// } else {
+	// 	createPaymentOrder(paymentMethod, products)
+	// 	//handle: resturn and exception
 	// }
+	res.status(StatusCodes.CREATED).json(listCreatedOrder)
 
 
-	// //delete products in cart after ordering
-	// await deleteManyProductsInCart(userId, orderItems)
-
-	// // if (paymentMethod === 'COD') {
-	// // 	res.status(StatusCodes.CREATED).json({
-	// // 		paymentMethod,
-	// // 		orders
-	// // 	})
-	// // } else {
-	// // 	createPaymentOrder(paymentMethod, products)
-	// // 	//handle: resturn and exception
-	// // }
-	// console.log("order", order)
-	// res.status(StatusCodes.CREATED).json(order)
-	// //todo: send pust notis to many sellers
-	// sendPushNotiToAdmins(user, order)
+	//todo: send pust notis to many sellers
+	sendPushNotiToAdmins(user, listCreatedOrder)
 }
 const calWeightCost = (products) => {
 	let totalWeight = 0
@@ -159,6 +165,14 @@ const calWeightCost = (products) => {
 	return { totalWeight, totalProductCost }
 
 }
+
+const generateOrderId = () => {
+	/**create orderId */
+	const today = new Date().toJSON().slice(0, 10).replace(/-/g, '');
+	const orderId = today + randomstring.generate(5)
+	return orderId
+}
+
 const getMyOrders = async (req, res) => {
 	console.log("getMyOrders")
 	const userId = req.user.userId

@@ -31,27 +31,35 @@ const sendPushNotiToCustomer = async (user, order) => {
 	console.log('result', result.results[0].error)
 }
 
-const sendPushNotiToAdmins = async (user, order) => {
+const sendPushNotiToAdmins = async (user, orders) => {
 	const userName = user.name
-	const title = getTitleAdmin(order.status)
-	const content = getContentAdmin(userName, order.status, order.orderId, order.billing.subTotal)
-	const orderId = order._id.toString()
-	const imageUrl = order.orderItems[0].imageUrl
-	const message = {
-		data: {
-			title,
-			content,
-			orderId,
-			imageUrl
-		},
-	}
-	const options = {
-		priority: "high",
-		timeToLive: fcmTTL
-	};
 
-	const result = await admin.messaging().sendToTopic('admin', message, options)
-	console.log('result', result)
+	for (const order of orders) {
+		const title = getTitleAdmin(order.status)
+		const content = getContentAdmin(userName, order.status, order.orderId, order.billing.subTotal)
+		const orderId = order._id.toString()
+		const imageUrl = order.orderItems[0].imageUrl
+
+		//get seller info
+		const seller = await User.findOne({ _id: order.shopRef })
+		const registrationToken = seller.fcmToken
+		const message = {
+			data: {
+				title,
+				content,
+				orderId,
+				imageUrl
+			},
+		}
+		const options = {
+			priority: "high",
+			timeToLive: fcmTTL
+		};
+
+		const result = await admin.messaging().sendToDevice(registrationToken, message, options)
+		console.log('result', result)
+	}
+
 }
 const getContent = (orderStatus, orderId) => {
 	let subContent = "Order updated!"

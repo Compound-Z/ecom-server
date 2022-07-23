@@ -6,6 +6,7 @@ const {
 	getOrderDetails,
 	updateOrderStatus,
 	cancelOrder,
+	receiveOrder,
 	searchOrdersByOrderId,
 	searchOrdersByUserName,
 	getOrdersBaseOnTime,
@@ -39,7 +40,7 @@ router.route('/dashboard')
 // router.route('/search/:search_words').get(searchProducts)
 router.route('/:order_id')
 	.get(authentication.authenticateUser, getOrderDetails)
-	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin', 'seller'), updateOrderStatus)
+	.patch(authentication.authenticateUser, updateOrderStatus)
 	.delete(authentication.authenticateUser, authentication.authorizePermissions('customer'), cancelOrder)
 
 module.exports = router

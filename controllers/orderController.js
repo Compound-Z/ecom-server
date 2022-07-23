@@ -306,17 +306,22 @@ const getOrderDetails = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
 	console.log("updateOrderStatus")
 	const status = req.body.status
+	const role = req.user.role
 	switch (status) {
 		case 'CONFIRMED':
+			if (!(role === 'seller')) throw new CustomError.UnauthorizedError('Unauthorized to access this route')
 			await confirmOrder(req, res)
 			break;
 		case 'PROCESSING':
+			if (!(role === 'seller')) throw new CustomError.UnauthorizedError('Unauthorized to access this route')
 			await startProcessingOrder(req, res)
 			break;
 		case 'CANCELED':
+			if (!(role === 'customer')) throw new CustomError.UnauthorizedError('Unauthorized to access this route')
 			await cancelOrder(req, res)
 			break;
 		case 'RECEIVED':
+			if (!(role === 'customer')) throw new CustomError.UnauthorizedError('Unauthorized to access this route')
 			await receiveOrder(req, res)
 			break;
 		default:
@@ -708,6 +713,7 @@ module.exports = {
 	getOrderDetails,
 	updateOrderStatus,
 	cancelOrder,
+	receiveOrder,
 	searchOrdersByOrderId,
 	searchOrdersByUserName,
 	getOrdersBaseOnTime,

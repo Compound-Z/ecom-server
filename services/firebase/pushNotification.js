@@ -42,7 +42,7 @@ const sendPushNotiToAdmins = async (user, orders) => {
 
 		//get seller info
 		const seller = await User.findOne({ _id: order.shopRef })
-		const registrationToken = seller.fcmToken
+		const registrationToken = seller.fcmToken ? seller.fcmToken : ""
 		const message = {
 			data: {
 				title,

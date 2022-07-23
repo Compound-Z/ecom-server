@@ -176,25 +176,32 @@ const generateOrderId = () => {
 const getMyOrders = async (req, res) => {
 	console.log("getMyOrders")
 	const userId = req.user.userId
+	const role = req.user.role
 	const statusFilter = req.body.statusFilter
-	let orders
-	if (statusFilter) {
-		orders = await Order.find({
-			"user.userId": userId,
-			"status": statusFilter,
-		},
-			{ 'orderItems': { $slice: 1 } })
-			.select('_id orderId billing status updatedAt')
-	} else {
-		orders = await Order.find({
-			"user.userId": userId,
-		},
-			{ 'orderItems': { $slice: 1 } }
-		).select('_id orderId billing status updatedAt')
+	const shopId = req.user.shopId
+
+	//setup query obj based on the req
+	let queryObj = {}
+	if (role === 'customer') {
+		queryObj['user.userId'] = userId
+	} else if (role === 'seller') {
+		queryObj['shopRef'] = shopId
 	}
+
+	if (statusFilter) {
+		queryObj['status'] = statusFilter
+	}
+
+	let orders = await Order.find(
+		queryObj,
+		{ 'orderItems': { $slice: 1 } }
+	)
+		.select('_id orderId billing status updatedAt')
+
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)
 }
+
 
 //admin only
 const getAllOrders = async (req, res) => {

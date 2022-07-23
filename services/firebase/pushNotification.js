@@ -13,7 +13,7 @@ const sendPushNotiToCustomer = async (user, order) => {
 	const title = getTitle(order.status)
 	const content = getContent(order.status, order.orderId)
 	const orderId = order._id.toString()
-	const registrationToken = user.fcmToken
+	const registrationToken = user.fcmToken ? user.fcmToken : "dummy"
 	const imageUrl = order.orderItems[0].imageUrl
 	const message = {
 		data: {

@@ -302,7 +302,7 @@ const getOrderDetails = async (req, res) => {
 	res.status(StatusCodes.OK).json(order)
 }
 
-//admin only
+//seller only
 const updateOrderStatus = async (req, res) => {
 	console.log("updateOrderStatus")
 	const status = req.body.status
@@ -324,11 +324,12 @@ const updateOrderStatus = async (req, res) => {
 	}
 }
 
-//only admin
+//only seller
 const startProcessingOrder = async (req, res) => {
 	const orderId = req.params.order_id
 	const userId = req.user.userId
-
+	const shopId = req.user.shopId
+	console.log('shopId', shopId)
 	const user = await User.findOne({
 		_id: userId
 	})
@@ -336,7 +337,7 @@ const startProcessingOrder = async (req, res) => {
 
 	const order = await Order.findOneAndUpdate({
 		_id: orderId,
-		"user.userId": userId,
+		shopRef: shopId,
 		status: {
 			$in: constant.processableStatus
 		}

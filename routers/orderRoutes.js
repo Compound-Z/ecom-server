@@ -39,7 +39,7 @@ router.route('/dashboard')
 // router.route('/search/:search_words').get(searchProducts)
 router.route('/:order_id')
 	.get(authentication.authenticateUser, getOrderDetails)
-	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateOrderStatus)
+	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin', 'seller'), updateOrderStatus)
 	.delete(authentication.authenticateUser, cancelOrder)
 
 module.exports = router

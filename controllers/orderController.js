@@ -12,6 +12,8 @@ const randomstring = require('randomstring')
 const { sendPushNotiToCustomer, sendPushNotiToAdmins, sendPushNotiToAdmin } = require('../services/firebase/pushNotification')
 const { addListProductsToReviewQueue } = require('../controllers/reviewController')
 const _ = require('underscore');
+const mongoose = require('mongoose');
+
 const createOrder = async (req, res) => {
 	console.log("createOrder")
 	console.log('body: ', req.body)
@@ -586,9 +588,11 @@ const searchOrdersByUserName = async (req, res) => {
 
 	const statusFilter = req.body.statusFilter
 	const userName = req.body.userName
+	const shopId = req.user.shopId
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
 
+	console.log('shopid', shopId)
 	if (!userName) {
 		await getAllOrders(req, res)
 		return
@@ -605,23 +609,25 @@ const searchOrdersByUserName = async (req, res) => {
 	let orders = null
 	if (!statusFilter) {
 		const aggregate = Order.aggregate()
-		aggregate.search({
-			index: "nameIdx",
-			autocomplete: {
-				query: userName,
-				path: 'user.name'
-			}
-		})
+		aggregate.
+			search({
+				index: "nameIdx",
+				autocomplete: {
+					query: userName,
+					path: 'user.name'
+				}
+			}).match({ shopRef: mongoose.Types.ObjectId(shopId) })
 		orders = await Order.aggregatePaginate(aggregate, options)
 	} else {
 		const aggregate = Order.aggregate()
-		aggregate.search({
-			index: "nameIdx",
-			autocomplete: {
-				query: userName,
-				path: 'user.name'
-			}
-		}).match({ status: statusFilter })
+		aggregate.
+			search({
+				index: "nameIdx",
+				autocomplete: {
+					query: userName,
+					path: 'user.name'
+				}
+			}).match({ shopRef: mongoose.Types.ObjectId(shopId), status: statusFilter })
 		orders = await Order.aggregatePaginate(aggregate, options)
 	}
 

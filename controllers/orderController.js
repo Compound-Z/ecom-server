@@ -194,11 +194,33 @@ const getMyOrders = async (req, res) => {
 		queryObj['status'] = statusFilter
 	}
 
-	let orders = await Order.find(
-		queryObj,
-		{ 'orderItems': { $slice: 1 } }
-	)
-		.select('_id orderId billing status updatedAt')
+	let orders = null
+
+	if (role === 'customer') {
+		orders = await Order.find(
+			queryObj,
+			{ 'orderItems': { $slice: 1 } }
+		).select('_id orderId billing status updatedAt')
+
+	} else if (role === 'seller') {
+		const page = req.body.page || 1
+		const pageSize = req.body.pageSize || 10
+		const options = {
+			sort: {
+				updatedAt: -1
+			},
+			page: page,
+			limit: pageSize,
+			select: '_id orderId user orderItems billing status updatedAt',
+			select: {
+				orderItems: { $slice: 1 }
+			}
+		}
+		orders = await Order.paginate(
+			queryObj,
+			options
+		)
+	}
 
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)
@@ -534,16 +556,17 @@ const receiveOrder = async (req, res) => {
 	await addListProductsToReviewQueue(userId, newOrder)
 }
 
-
+//feature for seller only
 const searchOrdersByOrderId = async (req, res) => {
 
 	const statusFilter = req.body.statusFilter
 	const orderId = req.body.orderId
+	const shopId = req.user.shopId
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
 
 	if (!orderId) {
-		await getAllOrders(req, res)
+		await getMyOrders(req, res)
 		return
 	}
 
@@ -553,7 +576,7 @@ const searchOrdersByOrderId = async (req, res) => {
 		},
 		page: page,
 		limit: pageSize,
-		select: '_id orderId user orderItems billing status updatedAt',
+		select: '_id orderId user orderItems billing status updatedAt shopRef',
 	}
 
 	let orders = null
@@ -565,7 +588,7 @@ const searchOrdersByOrderId = async (req, res) => {
 				query: orderId,
 				path: 'orderId'
 			}
-		})
+		}).match({ shopRef: mongoose.Types.ObjectId(shopId) })
 		orders = await Order.aggregatePaginate(aggregate, options)
 	} else {
 		const aggregate = Order.aggregate()
@@ -575,7 +598,7 @@ const searchOrdersByOrderId = async (req, res) => {
 				query: orderId,
 				path: 'orderId'
 			}
-		}).match({ status: statusFilter })
+		}).match({ shopRef: mongoose.Types.ObjectId(shopId), status: statusFilter })
 		orders = await Order.aggregatePaginate(aggregate, options)
 	}
 	console.log('order', orders)
@@ -594,7 +617,7 @@ const searchOrdersByUserName = async (req, res) => {
 
 	console.log('shopid', shopId)
 	if (!userName) {
-		await getAllOrders(req, res)
+		await getMyOrders(req, res)
 		return
 	}
 

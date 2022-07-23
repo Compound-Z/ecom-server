@@ -247,12 +247,14 @@ const getOrdersBaseOnTime = async (req, res) => {
 }
 
 const getOrdersBaseOnNumberOfDays = async (req, res) => {
+	const shopId = req.user.shopId
 	console.log('getOrdersBaseOnNumberOfDays')
 	const numberOfDays = req.body.numberOfDays
 	if (!numberOfDays) throw new CustomError.BadRequestError('Please provide number of days')
 	if (numberOfDays > 60) throw new CustomError.BadRequestError('Number of days is too big, try using time span instead')
 	const orders = await Order.find(
 		{
+			shopRef: shopId,
 			createdAt: {
 				$gte: Date.now() - numberOfDays * constant.oneDayInMiliceconds/** for now i test in hours. should change back to days:: constant.oneDayInMiliceconds*/
 			}

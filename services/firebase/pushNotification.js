@@ -3,6 +3,7 @@ const serviceAccount = JSON.parse(process.env.GOOGLE_CREDS);
 const { fcmTTL } = require('../../utils/constants')
 const User = require('../../models/User')
 const CustomError = require('../../errors');
+const Shop = require('../../models/Shop')
 
 admin.initializeApp({
 	credential: admin.credential.cert(serviceAccount)
@@ -41,8 +42,13 @@ const sendPushNotiToAdmins = async (user, orders) => {
 		const imageUrl = order.orderItems[0].imageUrl
 
 		//get seller info
-		const seller = await User.findOne({ _id: order.shopRef })
-		const registrationToken = seller.fcmToken ? seller.fcmToken : ""
+		const shop = await Shop.findOne({ _id: order.shopRef }).populate('userId')
+		if (!shop) {
+			console.log('Can not find shop to send notification')
+			throw new CustomError.NotFoundError('Can not find shop to send notification')
+		}
+		const seller = shop.userId
+		const registrationToken = seller?.fcmToken ? seller.fcmToken : "dummy"
 		const message = {
 			data: {
 				title,

@@ -67,6 +67,41 @@ const sendPushNotiToAdmins = async (user, orders) => {
 	}
 
 }
+
+//send noti to only one admin
+const sendPushNotiToAdmin = async (user, order) => {
+	const userName = user.name
+
+	const title = getTitleAdmin(order.status)
+	const content = getContentAdmin(userName, order.status, order.orderId, order.billing.subTotal)
+	const orderId = order._id.toString()
+	const imageUrl = order.orderItems[0].imageUrl
+
+	//get seller info
+	const shop = await Shop.findOne({ _id: order.shopRef }).populate('userId')
+	if (!shop) {
+		console.log('Can not find shop to send notification')
+		throw new CustomError.NotFoundError('Can not find shop to send notification')
+	}
+	const seller = shop.userId
+	const registrationToken = seller?.fcmToken ? seller.fcmToken : "dummy"
+	const message = {
+		data: {
+			title,
+			content,
+			orderId,
+			imageUrl
+		},
+	}
+	const options = {
+		priority: "high",
+		timeToLive: fcmTTL
+	};
+
+	const result = await admin.messaging().sendToDevice(registrationToken, message, options)
+	console.log('result', result)
+
+}
 const getContent = (orderStatus, orderId) => {
 	let subContent = "Order updated!"
 
@@ -130,4 +165,4 @@ const getTitleAdmin = (orderStatus) => {
 	return subContent
 }
 
-module.exports = { sendPushNotiToCustomer, sendPushNotiToAdmins }
+module.exports = { sendPushNotiToCustomer, sendPushNotiToAdmins, sendPushNotiToAdmin }

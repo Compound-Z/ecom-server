@@ -9,7 +9,7 @@ const ghnAPI = require('../services/ghn/ghnAPI');
 const constant = require('../utils/constants')
 const { deleteManyProductsInCart } = require('./cartController')
 const randomstring = require('randomstring')
-const { sendPushNotiToCustomer, sendPushNotiToAdmins } = require('../services/firebase/pushNotification')
+const { sendPushNotiToCustomer, sendPushNotiToAdmins, sendPushNotiToAdmin } = require('../services/firebase/pushNotification')
 const { addListProductsToReviewQueue } = require('../controllers/reviewController')
 const _ = require('underscore');
 const createOrder = async (req, res) => {
@@ -426,7 +426,7 @@ const confirmOrder = async (req, res) => {
 	};
 }
 
-/**only customer can cancel their order, admin should not be able to*/
+/**only customer can cancel their order, admin and seller should not be able to*/
 const cancelOrder = async (req, res) => {
 	//only cancel if the order status is pending, processing
 	const userId = req.user.userId
@@ -446,7 +446,7 @@ const cancelOrder = async (req, res) => {
 	let newOrder = null
 	if (constant.cancelableStatus.includes(order.status)) {
 		//only cancel if the status is pending or processing
-		if (role === 'admin') {
+		if (role === 'admin') { //this code segment should be removed, but since i have block admin and seller from using this feature, leaving this intact is acceptable.
 			newOrder = await Order.findOneAndUpdate({
 				"user.userId": userId,
 				_id: orderId
@@ -477,7 +477,7 @@ const cancelOrder = async (req, res) => {
 	console.log('newOrder', newOrder)
 	res.status(StatusCodes.OK).json(newOrder)
 
-	sendPushNotiToAdmins(user, newOrder)
+	sendPushNotiToAdmin(user, newOrder)
 }
 
 /**only customer can receive their order, admin should not be able to*/

@@ -40,6 +40,6 @@ router.route('/dashboard')
 router.route('/:order_id')
 	.get(authentication.authenticateUser, getOrderDetails)
 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin', 'seller'), updateOrderStatus)
-	.delete(authentication.authenticateUser, cancelOrder)
+	.delete(authentication.authenticateUser, authentication.authorizePermissions('customer'), cancelOrder)
 
 module.exports = router

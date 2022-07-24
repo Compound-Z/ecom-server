@@ -143,7 +143,6 @@ const calculateAverageRatingUpdateReview = async (productId, rating, preRating) 
 }
 
 const getListReviewsOfAProduct = async (req, res) => {
-	const userId = req.user.userId
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
 	const productId = req.params.product_id
@@ -158,7 +157,6 @@ const getListReviewsOfAProduct = async (req, res) => {
 		limit: pageSize,
 	}
 	const query = {
-		userId,
 		productId
 	}
 	if (starFilter) query.rating = starFilter

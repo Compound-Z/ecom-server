@@ -25,7 +25,7 @@ router.route('/get-one-product/:product_id')
 router.route('/')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin', 'seller'), createProduct)
 router.route('/uploadImage')
-	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
+	.post(uploadImage)
 
 router.route('/search/').post(getAllProducts)
 router.route('/search/:search_words').post(searchProducts)

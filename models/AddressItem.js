@@ -74,7 +74,7 @@ const AddressItemSchema = new mongoose.Schema({
 	detailedAddress: {
 		type: String,
 		minlength: 5,
-		maxlength: 50,
+		maxlength: 150,
 		required: true
 	},
 	addressType: {

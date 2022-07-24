@@ -22,7 +22,7 @@ const calculateFeeOptions = (shopId, fromDistrictId, toDistrictId, toWardCode, w
     const feeOptions = [];
     for (const service of services.data) {
         console.log(shopId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue, service.service_id);
-        const response = yield serviceAndCalculateFeeAPIAxios.calculateFee(service.service_id, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue);
+        const response = yield serviceAndCalculateFeeAPIAxios.calculateFee(shopId, service.service_id, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue);
         console.log('response', response);
         if (response.code == 200)
             feeOptions.push({ service_id: service.service_id, name: service.short_name, fee: response.data });
@@ -33,9 +33,9 @@ const calculateFeeOptions = (shopId, fromDistrictId, toDistrictId, toWardCode, w
 const calculateExpectedDeliveryTime = (provinceId) => __awaiter(void 0, void 0, void 0, function* () {
     return ghn.address.getDistricts(provinceId);
 });
-const calculateFee = (shippingServiceId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue) => __awaiter(void 0, void 0, void 0, function* () {
+const calculateFee = (shippingShopId, shippingServiceId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue) => __awaiter(void 0, void 0, void 0, function* () {
     console.log('cal fee', shippingServiceId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue);
-    const response = yield serviceAndCalculateFeeAPIAxios.calculateFee(shippingServiceId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue);
+    const response = yield serviceAndCalculateFeeAPIAxios.calculateFee(shippingShopId, shippingServiceId, fromDistrictId, toDistrictId, toWardCode, weight, length, width, height, insuranceValue);
     console.log('response', response);
     // const fee = await ghn.service.calculateFee(
     // 	{

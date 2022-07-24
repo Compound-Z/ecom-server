@@ -21,6 +21,7 @@ const getServices = async (
 }
 
 const calculateFee = async (
+	shippingShopId,
 	serviceId,
 	fromDistrictId, toDistrictId, toWardCode,
 	weight, length, width, height,
@@ -40,7 +41,8 @@ const calculateFee = async (
 		}, {
 		headers: {
 			'Content-Type': 'application/json',
-			'Token': token
+			'Token': token,
+			'ShopId': shippingShopId
 		}
 	}
 	)

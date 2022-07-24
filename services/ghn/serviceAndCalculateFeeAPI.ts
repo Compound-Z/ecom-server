@@ -24,6 +24,7 @@ const calculateFeeOptions = async (
 			weight, length, width, height,
 			insuranceValue, service.service_id)
 		const response = await serviceAndCalculateFeeAPIAxios.calculateFee(
+			shopId,
 			service.service_id,
 			fromDistrictId, toDistrictId, toWardCode,
 			weight, length, width, height,
@@ -40,6 +41,7 @@ const calculateExpectedDeliveryTime = async (provinceId: number) => {
 	return ghn.address.getDistricts(provinceId)
 }
 const calculateFee = async (
+	shippingShopId: number,
 	shippingServiceId: number, fromDistrictId: number,
 	toDistrictId: number, toWardCode: string,
 	weight: number, length: number, width: number, height: number,
@@ -49,6 +51,7 @@ const calculateFee = async (
 		weight, length, width, height,
 		insuranceValue)
 	const response = await serviceAndCalculateFeeAPIAxios.calculateFee(
+		shippingShopId,
 		shippingServiceId,
 		fromDistrictId, toDistrictId, toWardCode,
 		weight, length, width, height,

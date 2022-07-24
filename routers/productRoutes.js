@@ -7,6 +7,7 @@ const {
 	updateProduct,
 	deleteProduct,
 	searchProducts,
+	searchProductsSeller,
 	getOrigins,
 	getOneProduct
 } = require('../controllers/productController')
@@ -29,6 +30,8 @@ router.route('/uploadImage')
 
 router.route('/search/').post(getAllProducts)
 router.route('/search/:search_words').post(searchProducts)
+router.route('/search-seller/').post(authentication.authenticateUser, authentication.authorizePermissions('seller'), getMyProducts)
+router.route('/search-seller/:search_words').post(authentication.authenticateUser, authentication.authorizePermissions('seller'), searchProductsSeller)
 
 router.route('/origins')
 	.get(authentication.authenticateUser, getOrigins)

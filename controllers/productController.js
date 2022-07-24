@@ -212,6 +212,49 @@ const searchProducts = async (req, res) => {
 	if (!products) throw new CustomError.NotFoundError('Not found')
 	res.status(StatusCodes.OK).json(products)
 }
+
+const searchProductsSeller = async (req, res) => {
+	/**currently, search by compounded text index: category-name */
+	/**Todo: Should be search by tags, or description? */
+	console.log('search product', req.body)
+	const searchWords = req.params.search_words
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const shopId = req.user.shopId
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
+	/**autocomplete search by name, category using Atlas search index instead of text index*/
+	const aggregate = Product.aggregate()
+	aggregate.search({
+		compound: {
+			should: [
+				{
+					autocomplete: {
+						query: searchWords,
+						path: 'name'
+					},
+				},
+				{
+					autocomplete: {
+						query: searchWords,
+						path: 'category'
+					},
+				}
+			],
+		}
+	}).match({ shopId: mongoose.Types.ObjectId(shopId) })
+	const products = await Product.aggregatePaginate(aggregate, options)
+	console.log('products', products)
+
+	if (!products) throw new CustomError.NotFoundError('Not found')
+	res.status(StatusCodes.OK).json(products)
+}
 const getOrigins = async (req, res) => {
 	const Country = mongoose.model('Country', CountrySchema)
 	const countries = await Country.find()
@@ -228,6 +271,7 @@ module.exports = {
 	updateProduct,
 	deleteProduct,
 	searchProducts,
+	searchProductsSeller,
 	getOrigins,
 	getOneProduct
 }

@@ -98,6 +98,7 @@ const createOrder = async (req, res) => {
 	for (const [groupName, products] of Object.entries(productsGrouped)) {
 		// //get shipping fee //todo: eastimate base on shop
 		const estimatedShippingFee = await ghnAPI.serviceAndCalculateFeeAPI.calculateFee(
+			products[0].shopId.shippingShopId,
 			products[0].shippingServiceId,
 			products[0].shopId.addressItem.district.districtId,
 			address.addresses[0].district.districtId,
@@ -316,11 +317,18 @@ const getOrdersBaseOnTimeSpan = async (req, res) => {
 const getOrderDetails = async (req, res) => {
 	console.log("getOrderDetails")
 	const userId = req.user.userId
+	const shopId = req.user.shopId
 	const orderId = req.params.order_id
-	const order = await Order.findOne({
-		"user.userId": userId,
-		_id: orderId
-	})
+	const role = req.user.role
+	let queryObj = { _id: orderId }
+	if (role === 'customer') {
+		queryObj['user.userId'] = userId
+	} else if (role === 'seller') {
+		queryObj['shopRef'] = mongoose.Types.ObjectId(shopId)
+	}
+	console.log(userId, shopId, orderId, queryObj)
+
+	const order = await Order.findOne(queryObj)
 	console.log('order:', order)
 	if (!order) throw new CustomError.NotFoundError('Order does not exist')
 	res.status(StatusCodes.OK).json(order)
@@ -688,6 +696,7 @@ const getShippingFeeOptions = async (req, res) => {
 	//get shop info
 	const shopId = products[0].shopId
 	const shop = await Shop.findOne({ _id: shopId })
+	console.log('shopId', shop.shippingShopId)
 
 	let totalWeight = 0
 	let totalProductCost = 0
@@ -695,7 +704,6 @@ const getShippingFeeOptions = async (req, res) => {
 		totalWeight += product.weight * product.quantity
 		totalProductCost += product.price * product.quantity
 	});
-
 	console.log('products:', products)
 	console.log(`weight: ${totalWeight} cost: ${totalProductCost}`)
 	console.log(`toDis: ${address.addresses[0].district.districtId} toWard: ${address.addresses[0].ward.code}`)

@@ -5,6 +5,7 @@ const CustomError = require('../errors');
 const uploadFile = require('../utils/fileUploadHelper');
 const { addUnderline } = require('../utils/stringHelper')
 const Shop = require('../models/Shop')
+var _ = require('underscore')
 
 const getAllCategories = async (req, res) => {
 	const categories = await Category.find({})
@@ -18,7 +19,15 @@ const getMyCategories = async (req, res) => {
 			select: { 'name': 1, 'imageUrl': 1 }
 		})
 	console.log('shop', shop.categories)
-	res.status(StatusCodes.OK).json(shop.categories)
+	const categories = _.map(shop.categories, function (category) {
+		return {
+			_id: category.categoryRef._id,
+			name: category.categoryRef.name,
+			imageUrl: category.categoryRef.imageUrl,
+			numberOfProduct: category.numberOfProduct
+		}
+	})
+	res.status(StatusCodes.OK).json(categories)
 }
 const getAllProductOfACategory = async (req, res) => {
 	const categoryName = req.params.name

@@ -38,7 +38,7 @@ router.route('/origins')
 
 router.route('/:id')
 	.get(getProductDetails)
-	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateProduct)
+	.patch(authentication.authenticateUser, authentication.authorizePermissions('seller'), updateProduct)
 	.delete(authentication.authenticateUser, authentication.authorizePermissions('admin', 'seller'), deleteProduct)
 // router.route('/:id/reviews').get(getAllReviewsOfAProduct)
 

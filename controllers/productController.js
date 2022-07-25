@@ -7,7 +7,7 @@ const Category = require('../models/Category');
 const { addUnderline } = require('../utils/stringHelper')
 const CountrySchema = require('../models/Country');
 const { default: mongoose } = require('mongoose');
-
+const Shop = require('../models/Shop')
 const getAllProducts = async (req, res) => {
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
@@ -112,6 +112,7 @@ const uploadImage = async (req, res) => {
 }
 const updateProduct = async (req, res) => {
 	const productId = req.params.id
+	const shopId = req.user.shopId
 	const { product: productReq, productDetail: productDetailReq } = req.body
 	if (productReq) {
 		if (productReq.category) {
@@ -123,7 +124,15 @@ const updateProduct = async (req, res) => {
 		throw new CustomError.NotFoundError(`This product with id ${productId} does not exist`)
 	}
 	const oldCate = oldProduct.category
-
+	console.log('!(oldCate === productReq.category)', !(oldCate === productReq.category))
+	if ((productReq.category) && !(oldCate === productReq.category)) {
+		const newCate = await Category.findOne({ name: productReq.category })
+		if (!newCate) {
+			throw new CustomError.NotFoundError(`This category with name ${productReq.category} does not exist`)
+		}
+		productReq['categoryRef'] = newCate._id
+	}
+	console.log('productReq', productReq)
 	const product = await Product.findOneAndUpdate(
 		{ _id: productId },
 		productReq,
@@ -132,15 +141,29 @@ const updateProduct = async (req, res) => {
 	if (!product) {
 		throw new CustomError.NotFoundError(`This product with id ${productId} does not exist`)
 	}
+	console.log('new updated product', product)
 
 	if (!(product.category === oldCate)) {
 		/**update cate */
 		/**increase numberOfProduct */
 		const productsOls = await Product.find({ category: oldCate })
 		const oldCateUpdate = await Category.findOneAndUpdate({ name: oldCate }, { numberOfProduct: productsOls.length }, { new: true, runValidators: true })
+
+		const productsOlsInMyShop = await Product.find({ category: oldCate, shopId: shopId })
+		console.log('productsOlsInMyShop', productsOlsInMyShop)
+		const oldCateUpdateMyShop = await Shop.findOneAndUpdate(
+			{ _id: shopId, 'categories.categoryRef': oldProduct.categoryRef },
+			{ 'categories.$.numberOfProduct': productsOlsInMyShop.length },
+			{ new: true, runValidators: true })
+		console.log('oldCateUpdateMyShop', oldCateUpdateMyShop)
 		/**decrease numberOfProduct until 0*/
 		const productsNew = await Product.find({ category: product.category })
 		const newCateUpdate = await Category.findOneAndUpdate({ name: product.category }, { numberOfProduct: productsNew.length }, { new: true, runValidators: true })
+		const productsNewInMyShop = await Product.find({ category: product.category, shopId: shopId })
+		const newCateUpdateMyShop = await Shop.findOneAndUpdate(
+			{ _id: shopId, 'categories.categoryRef': product.categoryRef },
+			{ 'categories.$.numberOfProduct': productsNewInMyShop.length },
+			{ new: true, runValidators: true })
 	}
 
 	const productDetail = await ProductDetail.findOneAndUpdate(

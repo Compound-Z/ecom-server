@@ -128,7 +128,7 @@ const searchProductsInCategorySeller = async (req, res) => {
 
 	if (!searchWordsProduct) {
 		req.params.name = categoryName
-		await getAllProductOfACategory(req, res)
+		await getAllProductOfACategorySeller(req, res)
 		return
 	}
 

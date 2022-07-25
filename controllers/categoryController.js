@@ -6,7 +6,7 @@ const uploadFile = require('../utils/fileUploadHelper');
 const { addUnderline } = require('../utils/stringHelper')
 const Shop = require('../models/Shop')
 var _ = require('underscore')
-
+const mongoose = require('mongoose')
 const getAllCategories = async (req, res) => {
 	const categories = await Category.find({})
 	res.status(StatusCodes.OK).json(categories)
@@ -24,7 +24,9 @@ const getMyCategories = async (req, res) => {
 			_id: category.categoryRef._id,
 			name: category.categoryRef.name,
 			imageUrl: category.categoryRef.imageUrl,
-			numberOfProduct: category.numberOfProduct
+			numberOfProduct: category.numberOfProduct,
+			createdAt: category.createdAt,
+			updatedAt: category.updatedAt,
 		}
 	})
 	res.status(StatusCodes.OK).json(categories)
@@ -43,6 +45,35 @@ const getAllProductOfACategory = async (req, res) => {
 	}
 	const products = await Product.paginate(
 		{ category: categoryName },
+		options
+	)
+	console.log('products', products)
+	if (!products) throw new CustomError.NotFoundError('Not found')
+
+	res.status(StatusCodes.OK).json(products)
+}
+
+const getAllProductOfACategorySeller = async (req, res) => {
+	const categoryName = req.params.name
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const { role, shopId } = req.user
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
+
+	let queryObj = { category: categoryName }
+	if (role === 'seller') {
+		queryObj['shopId'] = shopId
+	}
+
+	const products = await Product.paginate(
+		queryObj,
 		options
 	)
 	console.log('products', products)
@@ -81,6 +112,51 @@ const searchProductsInCategory = async (req, res) => {
 	}).match({
 		category: categoryName
 	})
+
+	const products = await Product.aggregatePaginate(aggregate, options)
+	console.log('products', products)
+
+	if (!products) throw new CustomError.NotFoundError('Not found')
+	res.status(StatusCodes.OK).json(products)
+}
+
+const searchProductsInCategorySeller = async (req, res) => {
+	const categoryName = req.params.category_name
+	const searchWordsProduct = req.body.searchWordsProduct
+	const { role, shopId } = req.user
+	console.log(categoryName, searchWordsProduct)
+
+	if (!searchWordsProduct) {
+		req.params.name = categoryName
+		await getAllProductOfACategory(req, res)
+		return
+	}
+
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
+
+	let matchQueryObj = {
+		category: categoryName
+	}
+	if (role === 'seller') {
+		matchQueryObj['shopId'] = mongoose.Types.ObjectId(shopId)
+	}
+
+	const aggregate = Product.aggregate()
+	aggregate.search({
+		autocomplete: {
+			query: searchWordsProduct,
+			path: 'name'
+		}
+	}).match(matchQueryObj)
 
 	const products = await Product.aggregatePaginate(aggregate, options)
 	console.log('products', products)
@@ -167,7 +243,9 @@ module.exports = {
 	getAllCategories,
 	getMyCategories,
 	getAllProductOfACategory,
+	getAllProductOfACategorySeller,
 	searchProductsInCategory,
+	searchProductsInCategorySeller,
 	createCategory,
 	uploadImage,
 	updateCategory,

@@ -2,7 +2,9 @@ const {
 	getAllCategories,
 	getMyCategories,
 	getAllProductOfACategory,
+	getAllProductOfACategorySeller,
 	searchProductsInCategory,
+	searchProductsInCategorySeller,
 	createCategory,
 	uploadImage,
 	updateCategory,
@@ -23,6 +25,10 @@ router.route('/uploadImage')
 	.post(authentication.authenticateUser, authentication.authorizePermissions('admin'), uploadImage)
 router.route('/search/:category_name')
 	.post(authentication.authenticateUser, searchProductsInCategory)
+router.route('/seller/search/:category_name')
+	.post(authentication.authenticateUser, authentication.authorizePermissions('seller'), searchProductsInCategorySeller)
+router.route('/seller/:name')
+	.post(authentication.authenticateUser, authentication.authorizePermissions('seller'), getAllProductOfACategorySeller)
 router.route('/:id')
 	.patch(authentication.authenticateUser, authentication.authorizePermissions('admin'), updateCategory)
 	.delete(authentication.authenticateUser, authentication.authorizePermissions('admin'), deleteCategory)

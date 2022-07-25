@@ -62,7 +62,7 @@ const getOneProduct = async (req, res) => {
 const getProductDetails = async (req, res) => {
 	const productId = req.params.id
 
-	const productDetail = await ProductDetail.findOne({ productId: productId })/*.populate('reviews')*/
+	const productDetail = await ProductDetail.findOne({ productId: productId }).populate('shopId')
 	if (!productDetail) {
 		throw new CustomError.NotFoundError(`This productDetail with productId ${productId} does not exist`)
 	}

@@ -107,6 +107,8 @@ ProductSchema.pre('remove', async function (next) {
 })
 
 ProductSchema.post('save', async function (next) {
+
+	/***update shop */
 	console.log('shopId', this.shopId)
 
 	const shop = await this.model('Shop').findOne({ _id: this.shopId })
@@ -127,6 +129,11 @@ ProductSchema.post('save', async function (next) {
 	} else {
 		shop.categories[pos].numberOfProduct = shop.categories[pos].numberOfProduct + 1
 	}
+
+	/**update number of product of the whole shop */
+	const numberOfProductOfShop = await this.model('Product').find({ shopId: this.shopId }).count()
+	shop.numberOfProduct = numberOfProductOfShop
+
 	await shop.save()
 })
 
@@ -150,6 +157,11 @@ ProductSchema.post('remove', async function (next) {
 			shop.categories.splice(pos, 1)
 		}
 	}
+
+	/**update number of product of the whole shop */
+	const numberOfProductOfShop = await this.model('Product').find({ shopId: this.shopId }).count()
+	shop.numberOfProduct = numberOfProductOfShop
+
 	await shop.save()
 })
 

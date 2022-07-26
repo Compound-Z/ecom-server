@@ -16,16 +16,25 @@ const giaohangnhanh_1 = __importDefault(require("giaohangnhanh"));
 const { shipping } = require('../../utils/constants');
 const orderAPIAxios = require('./orderAPIAxios');
 const CustomError = require('../../errors');
+const axios = require('axios').default;
 const ghn = new giaohangnhanh_1.default(process.env.GHN_API_KEY_TEST ? process.env.GHN_API_KEY_TEST : "", { test: true });
 const createOrder = (shopId, order) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     console.log('shopId', shopId);
     console.log('order 2', order);
-    const shippingOrder = yield orderAPIAxios.createOrder(shopId, order);
-    if (!(shippingOrder.code == 200)) {
-        throw new CustomError.BadRequestError(`Creating shipping order error: ${shippingOrder.message}`);
+    try {
+        const shippingOrder = yield orderAPIAxios.createOrder(shopId, order);
+        console.log('orderAPI', shippingOrder.data);
+        return shippingOrder.data;
     }
-    console.log('orderAPI', shippingOrder.data);
-    return shippingOrder.data;
+    catch (err) {
+        if (axios.isAxiosError(err)) {
+            const e = err;
+            console.log('e.res', e.response);
+            throw new CustomError.BadRequestError2(`Creating shipping order error`, (_a = e.response) === null || _a === void 0 ? void 0 : _a.data);
+        }
+        throw new CustomError.BadRequestError(`Creating shipping order error`);
+    }
 });
 class Order {
     constructor(user, address, orderItems, billing, status, note, shippingDetails, employee) {

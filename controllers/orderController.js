@@ -51,7 +51,7 @@ const createOrder = async (req, res) => {
 	})
 		.populate({
 			path: 'shopId',
-			select: { 'shippingShopId': 1, 'addressItem': 1 }
+			select: { 'shippingShopId': 1, 'addressItem': 1, 'name': 1 }
 		})
 		.select('_id sku name category price imageUrl quantity weight orderId').lean()
 	if (!products) throw new CustomError.InternalServerError('Error')
@@ -64,6 +64,7 @@ const createOrder = async (req, res) => {
 		element.quantity = sortedOrderItems[idx].quantity
 		element.productId = element._id
 		element.shippingServiceId = sortedOrderItems[idx].shippingServiceId
+		element['shopName'] = element.shopId.name
 	});
 	console.log('sorted products', products)
 	//todo: group products by shop so that each group will be a sub-order
@@ -152,10 +153,10 @@ const createOrder = async (req, res) => {
 	// 	createPaymentOrder(paymentMethod, products)
 	// 	//handle: resturn and exception
 	// }
-	res.status(StatusCodes.CREATED).json(listCreatedOrder)
+	res.status(StatusCodes.CREATED).json(listCreatedOrder[0])
 
 
-	//todo: send pust notis to many sellers
+	//todo: send pust notis to many sellers | only return the first order since the client wont use this data anw
 	sendPushNotiToAdmins(user, listCreatedOrder)
 }
 const calWeightCost = (products) => {
@@ -433,22 +434,25 @@ const confirmOrder = async (req, res) => {
 	//only create new shipping order if there is no one
 	if (!order.shippingDetails.expectedDeliveryTime) {
 		console.log('shipping shop', order.shopRef.shippingShopId)
-		const shippingOrder = await ghnAPI.orderAPI.createOrder(parseInt(order.shopRef.shippingShopId), order)
-		console.log('shippingOrder', shippingOrder)
-		if (shippingOrder.message) {
-			//if failed creating shipping order, revert confirming order.
+		try {
+			const shippingOrder = await ghnAPI.orderAPI.createOrder(parseInt(order.shopRef.shippingShopId), order)
+			console.log('shippingOrder', shippingOrder)
+
+			//todo: store shipping information
+			order.shippingDetails.shippingOrderCode = shippingOrder.order_code
+			order.shippingDetails.transType = shippingOrder.trans_type
+			order.shippingDetails.mainServiceFee = shippingOrder.fee.main_service
+			order.shippingDetails.insurance = shippingOrder.fee.insurance
+			order.shippingDetails.totalFee = shippingOrder.total_fee
+			order.shippingDetails.expectedDeliveryTime = shippingOrder.expected_delivery_time
+			await order.save()
+		} catch (error) {
+			console.log('error', error)
 			order.status = 'PROCESSING'
 			await order.save()
-			throw new CustomError.InternalServerError(`Giaohangnhanh: ${shippingOrder.message}`)
+			throw new CustomError.InternalServerError(`Giaohangnhanh: ${error.originErrorObj.code_message_value}`)
 		}
-		//todo: store shipping information
-		order.shippingDetails.shippingOrderCode = shippingOrder.order_code
-		order.shippingDetails.transType = shippingOrder.trans_type
-		order.shippingDetails.mainServiceFee = shippingOrder.fee.main_service
-		order.shippingDetails.insurance = shippingOrder.fee.insurance
-		order.shippingDetails.totalFee = shippingOrder.total_fee
-		order.shippingDetails.expectedDeliveryTime = shippingOrder.expected_delivery_time
-		await order.save()
+
 	}
 	console.log("confirmed order successfully", order)
 	//todo: notify user

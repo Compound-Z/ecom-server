@@ -7,5 +7,12 @@ class BadRequestError extends CustomAPIError {
 		this.statusCode = StatusCodes.BAD_REQUEST;
 	}
 }
+class BadRequestError2 extends CustomAPIError {
+	constructor(message, originErrorObj) {
+		super(message);
+		this.statusCode = StatusCodes.BAD_REQUEST;
+		this.originErrorObj = originErrorObj
+	}
+}
 
-module.exports = BadRequestError;
+module.exports = { BadRequestError, BadRequestError2 };

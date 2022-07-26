@@ -1,20 +1,27 @@
+import { AxiosError } from "axios";
 import GHN from "giaohangnhanh";
 const { shipping } = require('../../utils/constants')
 const orderAPIAxios = require('./orderAPIAxios')
 const CustomError = require('../../errors');
+const axios = require('axios').default;
 
 const ghn: GHN = new GHN(process.env.GHN_API_KEY_TEST ? process.env.GHN_API_KEY_TEST : "", { test: true })
 const createOrder = async (shopId: number, order: Order) => {
 	console.log('shopId', shopId)
 	console.log('order 2', order)
+	try {
+		const shippingOrder = await orderAPIAxios.createOrder(shopId, order)
+		console.log('orderAPI', shippingOrder.data)
+		return shippingOrder.data
+	} catch (err) {
+		if (axios.isAxiosError(err)) {
+			const e = err as AxiosError
+			console.log('e.res', e.response)
+			throw new CustomError.BadRequestError2(`Creating shipping order error`, e.response?.data);
+		}
+		throw new CustomError.BadRequestError(`Creating shipping order error`);
 
-	const shippingOrder = await orderAPIAxios.createOrder(shopId, order)
-
-	if (!(shippingOrder.code == 200)) {
-		throw new CustomError.BadRequestError(`Creating shipping order error: ${shippingOrder.message}`);
 	}
-	console.log('orderAPI', shippingOrder.data)
-	return shippingOrder.data
 }
 
 class Order {

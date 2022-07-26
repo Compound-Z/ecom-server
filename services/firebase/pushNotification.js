@@ -15,6 +15,7 @@ const sendPushNotiToCustomer = async (order) => {
 	const orderId = order._id.toString()
 
 	const customer = await User.findOne({ _id: order.user.userId })
+	console.log('customer', customer)
 	const registrationToken = customer.fcmToken ? customer.fcmToken : "dummy"
 	const imageUrl = order.orderItems[0].imageUrl
 	const message = {

@@ -94,17 +94,17 @@ const ProductSchema = new mongoose.Schema(
 );
 ProductSchema.index({ category: 'text', name: 'text' }, { weights: { name: 7, category: 3 } });
 
-// create virtual from Product -> Review: 1 - n
-ProductSchema.virtual('reviews', {
-	ref: 'Review',
-	localField: '_id',
-	foreignField: 'product',
-	justOne: false,
-});
+// // create virtual from Product -> Review: 1 - n
+// ProductSchema.virtual('reviews', {
+// 	ref: 'Review',
+// 	localField: '_id',
+// 	foreignField: 'productId',
+// 	justOne: false,
+// });
 
-ProductSchema.pre('remove', async function (next) {
-	await this.model('Review').deleteMany({ product: this._id })
-})
+// ProductSchema.pre('remove', async function (next) {
+// 	await this.model('Review').deleteMany({ productId: this._id })
+// })
 
 ProductSchema.post('save', async function (next) {
 

@@ -35,6 +35,16 @@ const OrderItemSchema = new mongoose.Schema({
 		type: Number,
 		require: [true, 'Please provide product\'s weight'],
 	},
+	shopId: {
+		type: mongoose.Schema.ObjectId,
+		ref: 'Shop',
+		required: true,
+		index: true,
+	},
+	shopName: {
+		type: String,
+		required: true
+	}
 })
 module.exports = {
 	OrderItemSchema

@@ -108,7 +108,7 @@ const createProduct = async (req, res) => {
 
 //todo: change to multi file upload?
 const uploadImage = async (req, res) => {
-	uploadFile(req, res, 'ecom/product')
+	await uploadFile(req, res, 'ecom/product')
 }
 const updateProduct = async (req, res) => {
 	const productId = req.params.id

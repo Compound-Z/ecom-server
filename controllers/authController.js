@@ -35,10 +35,10 @@ const register = async (req, res) => {
 		throw new CustomError.BadRequestError("Please provide a stronger password: minimum eight characters, at least one uppercase letter, one lowercase letter and one number!")
 	}
 
-	const { phoneNumber, name, password, role, shopName, imageUrl, provinceId, districtId, wardCode, detailedAddress } = req.body;
+	const { phoneNumber, name, password, role, shopName, shopDescription, imageUrl, provinceId, districtId, wardCode, detailedAddress } = req.body;
 	if (!phoneNumber || !name || !password || !role) throw new CustomError.BadRequestError('Please provide required info')
 	if (role === 'seller') {
-		if (!shopName || !imageUrl || !provinceId || !districtId || !wardCode || !detailedAddress) throw new CustomError.BadRequestError('Please provide required info')
+		if (!shopName || !shopDescription || !imageUrl || !provinceId || !districtId || !wardCode || !detailedAddress) throw new CustomError.BadRequestError('Please provide required info')
 		shopNameUnderLine = addUnderline(shopName)
 	}
 
@@ -72,7 +72,7 @@ const register = async (req, res) => {
 		if (user.role === 'seller') {
 			const { province, district, ward } = await getAndCheckAddress(provinceId, districtId, wardCode)
 			const addressItem = getAddressItemObj(provinceId, province, districtId, district, wardCode, ward, detailedAddress, user.name, user.phoneNumber)
-			const shop = await Shop.create({ userId: user._id, name: shopNameUnderLine, addressItem, imageUrl })
+			const shop = await Shop.create({ userId: user._id, name: shopNameUnderLine, description: shopDescription, addressItem, imageUrl })
 		}
 		else if (user.role === 'customer') {
 			const cart = await Cart.create({ userId: user._id })

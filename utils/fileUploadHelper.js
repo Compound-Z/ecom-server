@@ -14,7 +14,7 @@ const uploadFile = async (req, res, folderPath) => {
 		throw new CustomError.BadRequestError('Please Upload Image');
 	}
 	if (categoryImage.size > imgMaxSize) {
-		throw new CustomError.BadRequestError('Please upload image smaller 2MB');
+		throw new CustomError.BadRequestError('Please upload image smaller 4MB');
 	}
 
 	const result = await cloudinary.uploader.upload(

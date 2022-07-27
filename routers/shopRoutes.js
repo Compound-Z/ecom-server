@@ -3,7 +3,8 @@ const {
 	getProductsInShop,
 	getCategoriesInShop,
 	getProductsOfACategoryInShop,
-	searchProductsInShop
+	searchProductsInShop,
+	searchProductsOfCategoryInShop
 } = require('../controllers/shopController')
 
 const express = require('express')
@@ -14,6 +15,10 @@ router.route('/search')
 	.post(searchProductsInShop)
 router.route('/search/:search_words')
 	.post(searchProductsInShop)
+router.route('/search-cate')
+	.post(searchProductsOfCategoryInShop)
+router.route('/search-cate/:search_words_product')
+	.post(searchProductsOfCategoryInShop)
 router.route('/:shop_id')
 	.get(getShopInfo)
 router.route('/:shop_id/products')

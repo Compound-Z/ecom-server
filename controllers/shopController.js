@@ -24,6 +24,8 @@ const getProductsInShop = async (req, res) => {
 	const page = req.body.page || 1
 	const pageSize = req.body.pageSize || 10
 	const shopId = req.params.shop_id
+	console.log("getProductsInShop", req.body)
+
 	const options = {
 		sort: {
 			updatedAt: -1
@@ -147,6 +149,53 @@ const searchProductsInShop = async (req, res) => {
 	res.status(StatusCodes.OK).json(products)
 }
 
+const searchProductsOfCategoryInShop = async (req, res) => {
+	/**currently, search by compounded text index: category-name */
+	/**Todo: Should be search by tags, or description? */
+	console.log('search product', req.body)
+	const searchWordsProduct = req.params.search_words_product
+	console.log('params', req.params.search_words_product)
+
+	const shopId = req.body.shopId
+	const searchWordsCategory = req.body.searchWordsCategory
+	console.log('searchWordsProduct', searchWordsProduct)
+
+	if (!searchWordsProduct) {
+		req.params.shop_id = shopId
+		await getProductsInShop(req, res)
+		return
+	}
+	const page = req.body.page || 1
+	const pageSize = req.body.pageSize || 10
+	const options = {
+		sort: {
+			updatedAt: -1
+		},
+		page: page,
+		limit: pageSize,
+		select: '-user -createdAt -updatedAt -__v -id',
+	}
+	/**autocomplete search by name, category using Atlas search index instead of text index*/
+	const aggregate = Product.aggregate()
+	aggregate.search({
+		compound: {
+			should: [
+				{
+					autocomplete: {
+						query: searchWordsProduct,
+						path: 'name'
+					},
+				}
+			],
+		}
+	}).match({ shopId: mongoose.Types.ObjectId(shopId), category: searchWordsCategory })
+	const products = await Product.aggregatePaginate(aggregate, options)
+	console.log('products', products)
+
+	if (!products) throw new CustomError.NotFoundError('Not found')
+	res.status(StatusCodes.OK).json(products)
+}
+
 // const createShop = async (shopInfo) => {
 // 	const { name, imageUrl, address } = shopInfo
 
@@ -169,5 +218,6 @@ module.exports = {
 	getProductsInShop,
 	getCategoriesInShop,
 	getProductsOfACategoryInShop,
-	searchProductsInShop
+	searchProductsInShop,
+	searchProductsOfCategoryInShop,
 }

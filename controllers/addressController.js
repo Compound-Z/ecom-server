@@ -45,7 +45,9 @@ const createAddress = async (req, res) => {
 		}, { new: true, runValidators: true }
 		)
 		if (!address) throw new CustomError.NotFoundError('Can not find address')
-		if (isDefaultAddress) address.defaultAddressId = address.addresses[address.addresses.length - 1].id
+		console.log(address, address.addresses.length, address.addresses.length == 1)
+		/**if this address is marked as default or it is the first address to be created, mark it as default addresss */
+		if (isDefaultAddress || address.addresses.length == 1) address.defaultAddressId = address.addresses[address.addresses.length - 1].id
 		await address.save()
 		res.status(StatusCodes.OK).json(address)
 	}

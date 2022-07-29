@@ -44,7 +44,7 @@ const getAllProductOfACategory = async (req, res) => {
 		select: '-user -createdAt -updatedAt -__v -id',
 	}
 	const products = await Product.paginate(
-		{ category: categoryName },
+		{ category: addUnderline(categoryName) },
 		options
 	)
 	console.log('products', products)
@@ -67,7 +67,7 @@ const getAllProductOfACategorySeller = async (req, res) => {
 		select: '-user -createdAt -updatedAt -__v -id',
 	}
 
-	let queryObj = { category: categoryName }
+	let queryObj = { category: addUnderline(categoryName) }
 	if (role === 'seller') {
 		queryObj['shopId'] = shopId
 	}
@@ -110,7 +110,7 @@ const searchProductsInCategory = async (req, res) => {
 			path: 'name'
 		}
 	}).match({
-		category: categoryName
+		category: addUnderline(categoryName)
 	})
 
 	const products = await Product.aggregatePaginate(aggregate, options)
@@ -144,7 +144,7 @@ const searchProductsInCategorySeller = async (req, res) => {
 	}
 
 	let matchQueryObj = {
-		category: categoryName
+		category: addUnderline(categoryName)
 	}
 	if (role === 'seller') {
 		matchQueryObj['shopId'] = mongoose.Types.ObjectId(shopId)

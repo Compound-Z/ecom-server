@@ -242,6 +242,7 @@ const logout = async (req, res) => {
 		console.log('error: logout: ', error)
 		throw new CustomError.NotFoundError('Can not found this token!')
 	}
+	await User.findOneAndUpdate({ _id: req.user.userId }, { fcmToken: "" })
 	res.status(StatusCodes.OK).json({ message: 'Logged out successfully!' });
 };
 

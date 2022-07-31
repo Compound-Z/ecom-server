@@ -1,5 +1,6 @@
 const {
 	getShopInfo,
+	getShopInfoSeller,
 	getProductsInShop,
 	getCategoriesInShop,
 	getProductsOfACategoryInShop,
@@ -19,6 +20,8 @@ router.route('/search-cate')
 	.post(searchProductsOfCategoryInShop)
 router.route('/search-cate/:search_words_product')
 	.post(searchProductsOfCategoryInShop)
+router.route('/shop-info')
+	.get(authentication.authenticateUser, authentication.authorizePermissions('seller'), getShopInfoSeller)
 router.route('/:shop_id')
 	.get(getShopInfo)
 router.route('/:shop_id/products')

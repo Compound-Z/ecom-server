@@ -153,7 +153,12 @@ const createOrder = async (req, res) => {
 	// 	createPaymentOrder(paymentMethod, products)
 	// 	//handle: resturn and exception
 	// }
-	res.status(StatusCodes.CREATED).json(listCreatedOrder[0])
+	/**to compatible with object model in front-end */
+	/**deep copy to new obj so that i can assign new shopRef to the order */
+	const newOrderWithShopRefObj = JSON.parse(JSON.stringify(listCreatedOrder[0]))
+	newOrderWithShopRefObj.shopRef = {}
+	console.log('newOrderWithShopRefObj', newOrderWithShopRefObj)
+	res.status(StatusCodes.CREATED).json(newOrderWithShopRefObj)
 
 
 	//todo: send pust notis to many sellers | only return the first order since the client wont use this data anw
@@ -202,7 +207,7 @@ const getMyOrders = async (req, res) => {
 		orders = await Order.find(
 			queryObj,
 			{ 'orderItems': { $slice: 1 } }
-		).select('_id orderId billing status updatedAt')
+		).select('_id orderId billing status updatedAt shippingDetails.expectedDeliveryTime')
 
 	} else if (role === 'seller') {
 		const page = req.body.page || 1
@@ -213,7 +218,7 @@ const getMyOrders = async (req, res) => {
 			},
 			page: page,
 			limit: pageSize,
-			select: '_id orderId user orderItems billing status updatedAt',
+			select: '_id orderId user orderItems billing status updatedAt shippingDetails.expectedDeliveryTime',
 			select: {
 				orderItems: { $slice: 1 }
 			}
@@ -223,7 +228,7 @@ const getMyOrders = async (req, res) => {
 			options
 		)
 	}
-
+	console.log("orders", orders)
 	if (!orders) throw new CustomError.NotFoundError('Not found orders')
 	res.status(StatusCodes.OK).json(orders)
 }
@@ -329,7 +334,7 @@ const getOrderDetails = async (req, res) => {
 	}
 	console.log(userId, shopId, orderId, queryObj)
 
-	const order = await Order.findOne(queryObj)
+	const order = await Order.findOne(queryObj).populate({ path: 'shopRef', select: 'addressItem' })
 	console.log('order:', order)
 	if (!order) throw new CustomError.NotFoundError('Order does not exist')
 	res.status(StatusCodes.OK).json(order)
@@ -393,10 +398,15 @@ const startProcessingOrder = async (req, res) => {
 		console.log('order', order)
 		throw new CustomError.NotFoundError('Order does not exist or you can not update order status to PROCESSING')
 	}
-	console.log('startProcessingOrder:', order)
-	//todo: notify user/or can do caching to compare old data vs new data, so that the app can show red noti
 
-	res.status(StatusCodes.OK).json(order)
+	console.log('startProcessingOrder:', order)
+
+	/**to compatible with object model in front-end */
+	/**deep copy to new obj so that i can assign new shopRef to the order */
+	const newOrderWithShopRefObj = JSON.parse(JSON.stringify(order))
+	newOrderWithShopRefObj.shopRef = {}
+	res.status(StatusCodes.OK).json(newOrderWithShopRefObj)
+	//todo: notify user/or can do caching to compare old data vs new data, so that the app can show red noti
 	sendPushNotiToCustomer(order)
 }
 //admin only
@@ -455,8 +465,10 @@ const confirmOrder = async (req, res) => {
 
 	}
 	console.log("confirmed order successfully", order)
-	//todo: notify user
-	res.status(StatusCodes.OK).json(order)
+	/**deep copy to new obj so that i can assign new shopRef to the order */
+	const newOrderWithShopRefObj = JSON.parse(JSON.stringify(order))
+	newOrderWithShopRefObj.shopRef = {}
+	res.status(StatusCodes.OK).json(newOrderWithShopRefObj)
 
 	//send push noti to custumer
 	sendPushNotiToCustomer(order)
@@ -489,7 +501,7 @@ const cancelOrder = async (req, res) => {
 	const order = await Order.findOne({
 		_id: orderId,
 		"user.userId": userId,
-	}).lean()
+	})
 	if (!order) throw new CustomError.NotFoundError('Order does not exist')
 	let newOrder = null
 	if (constant.cancelableStatus.includes(order.status)) {
@@ -521,10 +533,14 @@ const cancelOrder = async (req, res) => {
 	} else {
 		throw new CustomError.BadRequestError(`Can not update order status, the order has already been ${order.status}!`)
 	}
-	//todo: notify user
 	console.log('newOrder', newOrder)
-	res.status(StatusCodes.OK).json(newOrder)
 
+	/**deep copy to new obj so that i can assign new shopRef to the order */
+	const newOrderWithShopRefObj = JSON.parse(JSON.stringify(newOrder))
+	newOrderWithShopRefObj.shopRef = {}
+	res.status(StatusCodes.OK).json(newOrderWithShopRefObj)
+
+	//todo: notify user
 	sendPushNotiToAdmin(user, newOrder)
 }
 
@@ -542,7 +558,7 @@ const receiveOrder = async (req, res) => {
 	const order = await Order.findOne({
 		_id: orderId,
 		"user.userId": userId,
-	}).lean()
+	})
 	if (!order) throw new CustomError.NotFoundError('Order does not exist')
 
 	let newOrder = null
@@ -562,7 +578,10 @@ const receiveOrder = async (req, res) => {
 		throw new CustomError.BadRequestError(`Can not mark this order as RECEIVED, the order status is ${order.status}! \n You can only receive an order after it has been confirmed!`)
 	}
 
-	res.status(StatusCodes.OK).json(newOrder)
+	/**deep copy to new obj so that i can assign new shopRef to the order */
+	const newOrderWithShopRefObj = JSON.parse(JSON.stringify(newOrder))
+	newOrderWithShopRefObj.shopRef = {}
+	res.status(StatusCodes.OK).json(newOrderWithShopRefObj)
 
 	//add received products to reviewQueue
 	await addListProductsToReviewQueue(userId, newOrder)

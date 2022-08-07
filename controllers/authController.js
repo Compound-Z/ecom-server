@@ -21,6 +21,7 @@ const {
 const crypto = require('crypto');
 
 const register = async (req, res) => {
+	console.log('***body', req.body)
 	//for testing only.
 	//todo: comment out in production enviroment
 	// return res.status(StatusCodes.CREATED).json({
@@ -81,6 +82,15 @@ const register = async (req, res) => {
 
 	} else {
 		user = existedUser
+		if (user.role === 'seller') {
+			/**even if the user existed, there is case shop still has not been created yet, so need to check if the shop existed, if not, create a new shop */
+			const shop = await Shop.findOne({ userId: user._id })
+			if (!shop) {
+				const { province, district, ward } = await getAndCheckAddress(provinceId, districtId, wardCode)
+				const addressItem = getAddressItemObj(provinceId, province, districtId, district, wardCode, ward, detailedAddress, user.name, user.phoneNumber)
+				const shop = await Shop.create({ userId: user._id, name: shopNameUnderLine, description: shopDescription, addressItem, imageUrl })
+			}
+		}
 	}
 
 	if (!user) throw new CustomError.InternalServerError('Internal system error!')
@@ -162,6 +172,8 @@ const verifyOTP = async (req, res) => {
 };
 
 const login = async (req, res) => {
+	console.log('***body', req.body)
+
 	const { phoneNumber, password } = req.body;
 
 	if (!phoneNumber || !password) {
@@ -247,6 +259,8 @@ const logout = async (req, res) => {
 };
 
 const forgotPassword = async (req, res) => {
+	console.log('***body', req.body)
+
 	console.log('body:', req.body)
 	const { phoneNumber } = req.body;
 	if (!phoneNumber) {
@@ -267,6 +281,8 @@ const forgotPassword = async (req, res) => {
 	res.status(StatusCodes.OK).json({ message: 'Please check your phone for reset OTP' });
 };
 const resetPassword = async (req, res) => {
+	console.log('***body', req.body)
+
 	/**Validate body */
 	const errrorsValidate = validationResult(req)
 	if (!errrorsValidate.isEmpty()) {

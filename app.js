@@ -23,7 +23,7 @@ const connectDB = require('./db/connect')
 const notFound = require('./middleware/not-found')
 const errorHandlerMiddleware = require('./middleware/error-handler')
 //helper
-const { bootstrap } = require('./db/bootstrap_data')
+const { bootstrap, bootstrapCategories } = require('./db/bootstrap_data')
 //routes
 const authRouter = require('./routers/authRoutes');
 const routerProduct = require('./routers/productRoutes')
@@ -63,6 +63,8 @@ const start = async () => {
 		console.log('Bootstraping data')
 		await bootstrap()
 		console.log('Bootstraping data finished')
+		await bootstrapCategories()
+		console.log('Bootstraping categories finished')
 
 		app.listen(port, () => {
 			console.log(`Server is running at ${port}...`);

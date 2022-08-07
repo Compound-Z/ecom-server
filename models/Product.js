@@ -127,7 +127,8 @@ ProductSchema.post('save', async function (next) {
 			numberOfProduct: 1
 		})
 	} else {
-		shop.categories[pos].numberOfProduct = shop.categories[pos].numberOfProduct + 1
+		const numberOfProductOfCategoryInShop = await this.model('Product').find({ shopId: this.shopId, categoryRef: this.categoryRef }).count()
+		shop.categories[pos].numberOfProduct = numberOfProductOfCategoryInShop
 	}
 
 	/**update number of product of the whole shop */
@@ -150,7 +151,8 @@ ProductSchema.post('remove', async function (next) {
 	});
 	if (pos != null) {
 		if (shop.categories[pos].numberOfProduct - 1 > 0) {
-			shop.categories[pos].numberOfProduct = shop.categories[pos].numberOfProduct - 1
+			const numberOfProductOfCategoryInShop = await this.model('Product').find({ shopId: this.shopId, categoryRef: this.categoryRef }).count()
+			shop.categories[pos].numberOfProduct = numberOfProductOfCategoryInShop
 		}
 		else if (shop.categories[pos].numberOfProduct - 1 == 0) {
 			//if there is no product in a category, remove  the category from shop

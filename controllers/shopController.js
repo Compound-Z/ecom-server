@@ -10,9 +10,19 @@ const getShopInfo = async (req, res) => {
 	const shopId = req.params.shop_id
 	if (!shopId) throw new CustomError.BadRequestError('shopId is missing')
 
-	const shop = await Shop.findOne({ _id: shopId })
+	const shop = await Shop.findOne({ _id: shopId }).populate({ path: 'userId', select: 'phoneNumber' })
 	if (!shop) throw new CustomError.NotFoundError('Can not found this shop')
 
+	res.status(StatusCodes.OK).json(shop)
+}
+
+const getShopInfoSeller = async (req, res) => {
+	const shopId = req.user.shopId
+	if (!shopId) throw new CustomError.BadRequestError('shopId is missing')
+
+	const shop = await Shop.findOne({ _id: shopId }).populate({ path: 'userId', select: 'phoneNumber' })
+	if (!shop) throw new CustomError.NotFoundError('Can not found this shop')
+	console.log(shop)
 	res.status(StatusCodes.OK).json(shop)
 }
 
@@ -215,6 +225,7 @@ const searchProductsOfCategoryInShop = async (req, res) => {
 
 module.exports = {
 	getShopInfo,
+	getShopInfoSeller,
 	getProductsInShop,
 	getCategoriesInShop,
 	getProductsOfACategoryInShop,

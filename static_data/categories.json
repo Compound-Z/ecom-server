@@ -1,0 +1,50 @@
+[
+	{
+		"name": "Beverages",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191688/ecom/category/ttrpdpx307jf7tzphy3a.jpg"
+	},
+	{
+		"name": "Bread & Bakery",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191688/ecom/category/pog1dt1jaqvkpihlbvjl.jpg"
+	},
+	{
+		"name": "Canned foods",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191688/ecom/category/moy49xzjfivgcj9ogtsx.jpg"
+	},
+	{
+		"name": "Cleaners",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191687/ecom/category/yocersye6fqtev72cyev.jpg"
+	},
+	{
+		"name": "Condiments and Spices",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191687/ecom/category/ct4cwk2asxsuv7epsgz7.jpg"
+	},
+	{
+		"name": "Dairy",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191687/ecom/category/gudhcgqffw603hocbwtg.jpg"
+	},
+	{
+		"name": "Frozen foods",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191687/ecom/category/tq86dnwoomx7tisfkctw.jpg"
+	},
+	{
+		"name": "Noodles & Rice",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191687/ecom/category/my9scfpjnpaqevgro61e.jpg"
+	},
+	{
+		"name": "Paper & Wrap",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191688/ecom/category/oqvf8y3i6v2ofq2qblz0.jpg"
+	},
+	{
+		"name": "Personal care",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191688/ecom/category/hjsic24pmwknzurnmlaw.jpg"
+	},
+	{
+		"name": "Snack",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191688/ecom/category/sw5ihnarvbirlxcf9pom.jpg"
+	},
+	{
+		"name": "Others",
+		"imageUrl": "https://res.cloudinary.com/hoangpht287/image/upload/v1659191687/ecom/category/ahk1bxwsw4hcnjboy6zk.jpg"
+	}
+]

@@ -24,7 +24,7 @@ const ShopSchema = new mongoose.Schema({
 		type: String,
 		required: [true, 'Please provide product description'],
 		minlength: [25, 'Description need to be longer than 25 characters'],
-		maxlength: [125, 'Description can not be more than 125 characters'],
+		maxlength: [500, 'Description can not be more than 500 characters'],
 	},
 	shippingShopId: {
 		type: String

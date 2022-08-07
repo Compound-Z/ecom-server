@@ -17,22 +17,27 @@ const sendPushNotiToCustomer = async (order) => {
 	const customer = await User.findOne({ _id: order.user.userId })
 	console.log('customer', customer)
 	const registrationToken = customer.fcmToken ? customer.fcmToken : "dummy"
-	const imageUrl = order.orderItems[0].imageUrl
-	const message = {
-		data: {
-			title,
-			content,
-			orderId,
-			imageUrl
-		},
+	if (!(registrationToken === "dummy")) {
+
+		const imageUrl = order.orderItems[0].imageUrl
+		const message = {
+			data: {
+				title,
+				content,
+				orderId,
+				imageUrl
+			},
+		}
+		const options = {
+			priority: "high",
+			timeToLive: fcmTTL
+		};
+		const result = await admin.messaging().sendToDevice(registrationToken, message, options)
+		console.log('result', result)
+		console.log('result', result.results[0].error)
+	} else {
+		console.log('skip sending noti to customer:', seller.name)
 	}
-	const options = {
-		priority: "high",
-		timeToLive: fcmTTL
-	};
-	const result = await admin.messaging().sendToDevice(registrationToken, message, options)
-	console.log('result', result)
-	console.log('result', result.results[0].error)
 }
 
 const sendPushNotiToAdmins = async (user, orders) => {
@@ -52,21 +57,27 @@ const sendPushNotiToAdmins = async (user, orders) => {
 		}
 		const seller = shop.userId
 		const registrationToken = seller?.fcmToken ? seller.fcmToken : "dummy"
-		const message = {
-			data: {
-				title,
-				content,
-				orderId,
-				imageUrl
-			},
-		}
-		const options = {
-			priority: "high",
-			timeToLive: fcmTTL
-		};
+		console.log("is underfined?", registrationToken)
+		if (!(registrationToken === "dummy")) {
+			const message = {
+				data: {
+					title,
+					content,
+					orderId,
+					imageUrl
+				},
+			}
+			const options = {
+				priority: "high",
+				timeToLive: fcmTTL
+			};
 
-		const result = await admin.messaging().sendToDevice(registrationToken, message, options)
-		console.log('result', result)
+			const result = await admin.messaging().sendToDevice(registrationToken, message, options)
+			console.log('result', result)
+		} else {
+			console.log('skip sending noti to seller:', seller.name)
+		}
+
 	}
 
 }
@@ -88,21 +99,25 @@ const sendPushNotiToAdmin = async (user, order) => {
 	}
 	const seller = shop.userId
 	const registrationToken = seller?.fcmToken ? seller.fcmToken : "dummy"
-	const message = {
-		data: {
-			title,
-			content,
-			orderId,
-			imageUrl
-		},
-	}
-	const options = {
-		priority: "high",
-		timeToLive: fcmTTL
-	};
+	if (!(registrationToken === "dummy")) {
+		const message = {
+			data: {
+				title,
+				content,
+				orderId,
+				imageUrl
+			},
+		}
+		const options = {
+			priority: "high",
+			timeToLive: fcmTTL
+		};
 
-	const result = await admin.messaging().sendToDevice(registrationToken, message, options)
-	console.log('result', result)
+		const result = await admin.messaging().sendToDevice(registrationToken, message, options)
+		console.log('result', result)
+	} else {
+		console.log('skip sending noti to seller:', seller.name)
+	}
 
 }
 const getContent = (orderStatus, orderId) => {

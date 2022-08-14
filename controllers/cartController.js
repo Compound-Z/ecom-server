@@ -33,7 +33,7 @@ const getAllProductsInCart = async (req, res) => {
 	})
 		.populate({
 			path: 'shopId',
-			select: { 'name': 1, 'imageUrl': 1 }
+			select: { 'name': 1, 'imageUrl': 1, 'addressItem': 1 }
 		})
 		.select('_id name price imageUrl quantity weight sku shopId').lean()
 

@@ -34,6 +34,7 @@ const orderRouter = require('./routers/orderRoutes')
 const reviewRouter = require('./routers/reviewRoutes')
 const shopRouter = require('./routers/shopRoutes')
 
+const { getOrderInfo } = require('./controllers/orderController')
 /*USE*/
 app.use(morgan('tiny'))
 app.use(express.json())
@@ -69,6 +70,8 @@ const start = async () => {
 		app.listen(port, () => {
 			console.log(`Server is running at ${port}...`);
 		})
+
+		setInterval(async function () { await getOrderInfo() }, 25000)
 	} catch (error) {
 		console.log(`Error while starting server: ${error}`);
 	}

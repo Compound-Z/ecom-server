@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { LogSchema } = require('./Log')
 const ShippingDetailSchema = new mongoose.Schema({
 	weight: {
 		type: Number,
@@ -34,6 +35,14 @@ const ShippingDetailSchema = new mongoose.Schema({
 	},
 	expectedDeliveryTime: {
 		type: String
+	},
+	status: {
+		type: String,
+		default: 'none'
+	},
+	log: {
+		type: [LogSchema],
+		required: true
 	}
 })
 module.exports = {

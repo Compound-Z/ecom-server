@@ -11,8 +11,10 @@ const { deleteManyProductsInCart } = require('./cartController')
 const randomstring = require('randomstring')
 const { sendPushNotiToCustomer, sendPushNotiToAdmins, sendPushNotiToAdmin } = require('../services/firebase/pushNotification')
 const { addListProductsToReviewQueue } = require('../controllers/reviewController')
+const token = process.env.GHN_API_KEY_TEST
 const _ = require('underscore');
 const mongoose = require('mongoose');
+const axios = require('axios').default;
 
 const createOrder = async (req, res) => {
 	console.log("createOrder")
@@ -455,6 +457,7 @@ const confirmOrder = async (req, res) => {
 			order.shippingDetails.insurance = shippingOrder.fee.insurance
 			order.shippingDetails.totalFee = shippingOrder.total_fee
 			order.shippingDetails.expectedDeliveryTime = shippingOrder.expected_delivery_time
+			order.shippingDetails.log = [] //at first, log will be empty
 			await order.save()
 		} catch (error) {
 			console.log('error', error)
@@ -762,6 +765,74 @@ const createShippingDetails = (totalWeight, shippingProvider, shippingServiceId)
 const createUserOrder = (userId, name, phoneNumber) => {
 	return { userId, name, phoneNumber }
 }
+const getOrderInfo = async () => {
+	//find the orders that need to be tracked
+	//the conditions is: order status is CONFIRMED, the shipping order status is not [cancel, delivered, returned]
+	console.log("NEW INTERVAL ************************************************************")
+	try {
+		const orders = await Order.find(
+			{
+				status: 'CONFIRMED',
+				"shippingDetails.status": {
+					$nin: ['cancel', 'delivered', 'returned']
+				}
+			})
+
+		if (orders && orders.length > 0) {
+			for (const order of orders) {
+				const orderCode = order.shippingDetails.shippingOrderCode
+				console.log("**************", orderCode)
+				if (orderCode) {
+					try {
+						//get info of each order
+						const response = await axios.post(
+							'https://dev-online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/detail',
+							{
+								"order_code": orderCode
+							}, {
+							headers: {
+								'Content-Type': 'application/json',
+								'Token': token,
+							}
+						}
+						)
+
+						if (response.status === 200) {
+							console.log('axios-ghn', response.data)
+							//if the shipping status is different from the current shipping status, update it.
+							if (response.data.data.status !== order.shippingDetails.status) {
+								//update new status
+								console.log('update new status', response.data.data.status, order.shippingDetails.status)
+								order.shippingDetails.status = response.data.data.status
+								//if log exists in response
+								if (response.data.data.log) {
+									console.log('log exist', response.data.data.log)
+									order.shippingDetails.log = response.data.data.log
+								}
+								const newOrder = await order.save()
+								console.log('save done', newOrder)
+								// const updatedOrder = await Order.findOneAndUpdate(
+								// 	{
+								// 		_id: order._id
+								// 	},{
+								// 		$set:{
+								// 			"shippingDetails.status": response.data.data.status
+								// 		}
+								// 	}
+								// )
+							}
+						}
+					} catch (error) {
+						console.log('axios-ghn error', error)
+					}
+				}
+			}
+		}
+	} catch (error) {
+		console.log('error when getting order info', error.message)
+	}
+
+}
 
 // getShippingDetails
 
@@ -777,4 +848,5 @@ module.exports = {
 	searchOrdersByOrderId,
 	searchOrdersByUserName,
 	getOrdersBaseOnTime,
+	getOrderInfo,
 }

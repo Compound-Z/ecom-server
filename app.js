@@ -71,7 +71,7 @@ const start = async () => {
 			console.log(`Server is running at ${port}...`);
 		})
 
-		setInterval(async function () { await getOrderInfo() }, 25000)
+		setInterval(async function () { await getOrderInfo() }, 1800000)
 	} catch (error) {
 		console.log(`Error while starting server: ${error}`);
 	}

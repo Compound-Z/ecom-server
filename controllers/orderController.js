@@ -209,7 +209,7 @@ const getMyOrders = async (req, res) => {
 		orders = await Order.find(
 			queryObj,
 			{ 'orderItems': { $slice: 1 } }
-		).select('_id orderId billing status updatedAt shippingDetails.expectedDeliveryTime')
+		).select('_id orderId billing status updatedAt shippingDetails.expectedDeliveryTime shippingDetails.status')
 
 	} else if (role === 'seller') {
 		const page = req.body.page || 1
@@ -220,7 +220,7 @@ const getMyOrders = async (req, res) => {
 			},
 			page: page,
 			limit: pageSize,
-			select: '_id orderId user orderItems billing status updatedAt shippingDetails.expectedDeliveryTime',
+			select: '_id orderId user orderItems billing status updatedAt shippingDetails.expectedDeliveryTime shippingDetails.status',
 			select: {
 				orderItems: { $slice: 1 }
 			}

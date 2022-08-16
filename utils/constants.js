@@ -24,11 +24,12 @@ processableStatus = ['PENDING']
 cancelableStatus = ['PENDING', 'PROCESSING']
 confirmableStatus = ['PROCESSING']
 receivableStatus = ['CONFIRMED']
+statisticsStatus = ['CONFIRMED', 'RECEIVED']
 imgMaxSize = 4 * 1024 * 1024;
 oneDayInMiliceconds = 24 * 3600 * 1000
 fcmTTL = 60 * 60 * 24 * 3 //3 days
 module.exports = {
-	brands, categories, shipping, cancelableStatus, processableStatus, confirmableStatus, receivableStatus,
+	brands, categories, shipping, cancelableStatus, processableStatus, confirmableStatus, receivableStatus, statisticsStatus,
 	imgMaxSize, oneDayInMiliceconds,
 	fcmTTL
 }

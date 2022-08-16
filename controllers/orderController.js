@@ -141,6 +141,19 @@ const createOrder = async (req, res) => {
 		}
 		console.log("order", order)
 		listCreatedOrder.push(order)
+
+		/**update sold number and stock nunmber of product */
+		for (const item of order.orderItems) {
+			const product = await Product.findOneAndUpdate({
+				_id: item.productId
+			}, {
+				$inc: {
+					saleNumber: item.quantity,
+					stockNumber: -item.quantity
+				},
+			})
+			console.log('product', product)
+		};
 	}
 
 	//delete products in cart after ordering
@@ -288,6 +301,9 @@ const getOrdersBaseOnNumberOfDays = async (req, res) => {
 	const orders = await Order.find(
 		{
 			shopRef: shopId,
+			status: {
+				$in: constant.statisticsStatus
+			},
 			createdAt: {
 				$gte: Date.now() - numberOfDays * constant.oneDayInMiliceconds/** for now i test in hours. should change back to days:: constant.oneDayInMiliceconds*/
 			}
@@ -311,6 +327,9 @@ const getOrdersBaseOnTimeSpan = async (req, res) => {
 
 	const orders = await Order.find(
 		{
+			status: {
+				$in: constant.statisticsStatus
+			},
 			createdAt: {
 				$gte: startTimeStamp,
 				$lte: endTimeStamp
@@ -318,7 +337,7 @@ const getOrdersBaseOnTimeSpan = async (req, res) => {
 		},
 		'orderItems billing status createdAt'
 	)
-	console.log('orders', orders)
+	console.log('ordersxxxxxxxxxx', orders)
 	res.status(StatusCodes.OK).json(orders)
 }
 
@@ -475,18 +494,7 @@ const confirmOrder = async (req, res) => {
 
 	//send push noti to custumer
 	sendPushNotiToCustomer(order)
-	/**update sold number and stock nunmber of product */
-	for (const item of order.orderItems) {
-		const product = await Product.findOneAndUpdate({
-			_id: item.productId
-		}, {
-			$inc: {
-				saleNumber: item.quantity,
-				stockNumber: -item.quantity
-			},
-		})
-		console.log('product', product)
-	};
+
 }
 
 /**only customer can cancel their order, admin and seller should not be able to*/
@@ -530,9 +538,22 @@ const cancelOrder = async (req, res) => {
 					status: 'CANCELED'
 				}
 			}, { new: true, runValidators: true })
+
 		}
 
 		if (!newOrder) throw new CustomError.NotFoundError('Order does not exist')
+		/**update sold number and stock nunmber of product */
+		for (const item of newOrder.orderItems) {
+			const product = await Product.findOneAndUpdate({
+				_id: item.productId
+			}, {
+				$inc: {
+					saleNumber: -item.quantity,
+					stockNumber: item.quantity
+				},
+			})
+			console.log('product', product)
+		};
 	} else {
 		throw new CustomError.BadRequestError(`Can not update order status, the order has already been ${order.status}!`)
 	}

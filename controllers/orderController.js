@@ -55,14 +55,19 @@ const createOrder = async (req, res) => {
 			path: 'shopId',
 			select: { 'shippingShopId': 1, 'addressItem': 1, 'name': 1 }
 		})
-		.select('_id sku name category price imageUrl quantity weight orderId').lean()
+		.select('_id sku name category price imageUrl quantity weight orderId stockNumber').lean()
 	if (!products) throw new CustomError.InternalServerError('Error')
 	if (products.length == 0) throw new CustomError.NotFoundError('Order is empty or Can not find product')
 
 	//assign quantity and productId from orderItems to each product
 	const sortedOrderItems = _(orderItems).sortBy(item => item.productId)
 	const sortedProducts = _(products).sortBy(product => product._id)
+
 	sortedProducts.forEach((element, idx) => {
+		//check if the number of product in stock is enough
+		if (element.stockNumber < sortedOrderItems[idx].quantity) {
+			throw new CustomError.BadRequestError(`The number of product ${element.name} in stock is insufficient`)
+		}
 		element.quantity = sortedOrderItems[idx].quantity
 		element.productId = element._id
 		element.shippingServiceId = sortedOrderItems[idx].shippingServiceId
